@@ -26,7 +26,7 @@ if not exist "services\api\venv" (
 
 echo [1/3] Starting Backend (FastAPI)...
 REM Set PYTHONPATH so api/main.py can find trading, ml, and solana modules
-start "Flint Backend" cmd /k "set PYTHONPATH=%CD%\services && cd services\api && venv\Scripts\python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+start "Flint Backend" cmd /k "set PYTHONPATH=%CD%\services\api && cd services\api && venv\Scripts\python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 > ..\..\backend_debug.log 2>&1"
 
 echo [2/3] Starting Web Frontend (Next.js)...
 start "Flint Web" cmd /k "cd apps\web && npm run dev"

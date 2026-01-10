@@ -13,7 +13,7 @@ export default function Home() {
             <div className="flex-1 flex flex-col min-w-0">
                 <TopBar />
 
-                <main className="flex-1 flex gap-3 px-3 pb-3 overflow-hidden min-h-0 bg-black">
+                <main className="flex-1 flex gap-4 px-6 pb-6 overflow-hidden min-h-0 bg-flint-bg">
                     {/* Left: order + chart */}
                     <section className="flex-1 flex gap-3 min-w-0">
                         <div className="w-[300px] rounded-xl bg-flint-panel border border-flint-border flex flex-col overflow-hidden">

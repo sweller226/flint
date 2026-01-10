@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-// import { FlintChart, Candle } from "./FlintChart";
-import { TerminalChartMock } from "./TerminalChartMock";
+import { FlintChart, Candle } from "./FlintChart";
+// import { TerminalChartMock } from "./TerminalChartMock";
 import axios from "axios";
 
 const TICKERS = ["ES", "BTC"];
@@ -9,26 +9,31 @@ const TIMEFRAMES = ["1m", "5m", "15m"];
 export const ChartPanel = () => {
     const [symbol, setSymbol] = useState("ES");
     const [timeframe, setTimeframe] = useState("1m");
-    // const [candles, setCandles] = useState<any[]>([]);
+    const [candles, setCandles] = useState<Candle[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // UI State for Context Menu
-    // UI State for Context Menu (Disabled)
-
     // Tool State
     const [activeTool, setActiveTool] = useState<"none" | "trendline" | "hline">("none");
-    // const [annotations, setAnnotations] = useState<any[]>([]);
+    const [annotations, setAnnotations] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchHistory = async () => {
             setLoading(true);
             setError(null);
             try {
-                // Hardcoded to Jan 3, 2017 for the current objective
-                const res = await axios.get(`http://localhost:8000/api/candles?symbol=${symbol}&timeframe=${timeframe}&date=2017-01-03`, { timeout: 5000 });
-                if (res.data && res.data.length > 0) {
-                    // setCandles(res.data);
+                // Fetch data from new backend
+                const res = await axios.get(`http://localhost:8000/api/candles?limit=1000`, { timeout: 5000 });
+
+                if (res.data && res.data.candles) {
+                    const mapped = res.data.candles.map((c: any) => ({
+                        time: c.timestamp, // Lightweight charts supports ISO string
+                        open: c.open,
+                        high: c.high,
+                        low: c.low,
+                        close: c.close,
+                    }));
+                    setCandles(mapped);
                 } else {
                     setError("Empty Data");
                 }
@@ -42,84 +47,91 @@ export const ChartPanel = () => {
         fetchHistory();
     }, [symbol, timeframe]);
 
-    // Context Menu Handlers (Disabled)
-
     return (
-        <div className="h-full flex flex-col bg-flint-panel relative overflow-hidden">
-            {/* header of chart */}
-            <div className="h-10 border-b border-flint-border flex items-center justify-between px-3 text-[11px] text-flint-text-secondary bg-flint-panel z-10">
-                <div className="flex gap-4">
-                    <div className="flex items-center gap-2">
+        <div className="h-full flex flex-col bg-flint-panel relative overflow-hidden rounded-xl border border-flint-border shadow-lg">
+            {/* Header */}
+            <div className="h-12 border-b border-flint-border flex items-center justify-between px-4 bg-flint-panel z-10">
+                <div className="flex gap-4 items-center">
+                    <div className="flex items-center bg-flint-subpanel rounded-lg p-1 border border-flint-border">
                         {TICKERS.map(s => (
                             <button
                                 key={s}
                                 onClick={() => setSymbol(s)}
-                                className={`px-2 py-0.5 rounded font-bold transition-all ${symbol === s ? "bg-flint-primary text-white" : "hover:text-flint-text-primary"}`}
+                                className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${symbol === s ? "bg-flint-blue text-white shadow-sm" : "text-flint-text-muted hover:text-white hover:bg-white/5"}`}
                             >
                                 {s}
                             </button>
                         ))}
                     </div>
-                    <div className="w-px h-4 bg-flint-border my-auto"></div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                         {TIMEFRAMES.map(t => (
                             <button
                                 key={t}
                                 onClick={() => setTimeframe(t)}
-                                className={`px-1.5 rounded transition-all ${timeframe === t ? "text-flint-primary font-bold" : "hover:text-flint-text-primary"}`}
+                                className={`px-2 py-1 rounded text-[11px] font-medium transition-all ${timeframe === t ? "text-flint-blue bg-flint-blue/10" : "text-flint-text-muted hover:text-white"}`}
                             >
                                 {t}
                             </button>
                         ))}
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <div className="px-2 py-1 flex items-center gap-2 text-[10px] font-black tracking-widest">
-                        {loading && <span className="animate-pulse text-flint-accent">FETCHING DATA...</span>}
-                        {error && <span className="text-flint-negative">ERROR: {error}</span>}
-                        {!loading && !error && <span className="flex items-center gap-1.5 text-flint-accent"><span className="h-1.5 w-1.5 rounded-full bg-flint-accent shadow-[0_0_8px_#8B5CF6]"></span> REPLAY MODE</span>}
+
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        {loading ? (
+                            <span className="text-[10px] font-bold text-flint-blue animate-pulse">UPDATING...</span>
+                        ) : (
+                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-flint-green"><span className="h-1.5 w-1.5 rounded-full bg-flint-green shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span> LIVE</span>
+                        )}
                     </div>
-                    <button className="px-2 py-1 rounded hover:bg-flint-bg transition-all">Indicators</button>
-                    <button className="ml-2 p-1 text-flint-text-primary">⚙️</button>
+                    <div className="h-4 w-px bg-flint-border"></div>
+                    <button className="p-1.5 hover:bg-white/5 rounded text-flint-text-muted hover:text-white transition-all">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18M3 12h18" /></svg>
+                    </button>
+                    <button className="p-1.5 hover:bg-white/5 rounded text-flint-text-muted hover:text-white transition-all">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                    </button>
                 </div>
             </div>
 
             <div className="flex-1 flex overflow-hidden relative">
-                {/* tools column */}
-                <div className="w-10 border-r border-flint-border flex flex-col items-center gap-5 py-4 text-[16px] text-flint-text-secondary bg-flint-panel z-10">
+                {/* Tools Rail */}
+                <div className="w-12 border-r border-flint-border flex flex-col items-center gap-2 py-3 bg-flint-subpanel z-10">
+                    {[
+                        { id: "trendline" as const, icon: "✏️", label: "Draw Trendline" },
+                        { id: "hline" as const, icon: "➖", label: "Horizontal Line" },
+                    ].map(tool => (
+                        <button
+                            key={tool.id}
+                            onClick={() => setActiveTool(tool.id)}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTool === tool.id ? "bg-flint-blue text-white shadow-[0_0_10px_rgba(37,99,235,0.3)]" : "text-flint-text-muted hover:bg-white/5 hover:text-white"}`}
+                            title={tool.label}
+                        >
+                            <span className="text-[14px]">{tool.icon}</span>
+                        </button>
+                    ))}
+
+                    <div className="w-6 h-px bg-flint-border my-1"></div>
+
                     <button
-                        onClick={() => setActiveTool("trendline")}
-                        className={`hover:text-flint-primary transition-colors tooltip p-1 rounded ${activeTool === "trendline" ? "bg-flint-primary/20 text-flint-primary border border-flint-primary/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]" : ""}`}
-                        title="Trendline"
-                    >
-                        ✏️
-                    </button>
-                    <button
-                        onClick={() => setActiveTool("hline")}
-                        className={`hover:text-flint-primary transition-colors tooltip p-1 rounded ${activeTool === "hline" ? "bg-flint-primary/20 text-flint-primary border border-flint-primary/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]" : ""}`}
-                        title="Horizontal Line"
-                    >
-                        ➖
-                    </button>
-                    <button className="hover:text-flint-primary transition-colors tooltip" title="Fib">📐</button>
-                    <button
-                        onClick={() => { /* setAnnotations([]); */ setActiveTool("none"); }}
-                        className="hover:text-flint-negative transition-colors tooltip"
+                        onClick={() => { setAnnotations([]); setActiveTool("none"); }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-flint-text-muted hover:text-flint-negative hover:bg-flint-negative/10 transition-all"
                         title="Clear All"
                     >
-                        🔄
+                        <span className="text-[14px]">🗑️</span>
                     </button>
-                    <div className="flex-1"></div>
-                    <button className="hover:text-flint-primary transition-colors text-[12px] opacity-50">📷</button>
                 </div>
 
-                {/* chart area */}
-                <div className="flex-1 relative bg-black p-2">
-                    <TerminalChartMock />
+                {/* Chart Area */}
+                <div className="flex-1 relative bg-flint-bg">
+                    <FlintChart
+                        candles={candles}
+                        annotations={annotations}
+                    />
                 </div>
             </div>
 
-            {/* Context Menu Removed for Smoke Test */}
+            {/* Context Menu Placeholder */}
         </div>
     );
 };

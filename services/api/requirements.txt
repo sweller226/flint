@@ -1,12 +1,7 @@
 fastapi
-uvicorn
+uvicorn[standard]
 pandas
 numpy
-# pandas-ta
-polygon-api-client
-google-generativeai
-python-dotenv
+pydantic
 websockets
-scikit-learn
-base58
-yfinance
+python-multipart
