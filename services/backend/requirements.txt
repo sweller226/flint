@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pandas
+numpy
+# pandas-ta
+polygon-api-client
+google-generativeai
+python-dotenv
+websockets
+scikit-learn
+base58

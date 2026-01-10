@@ -1,0 +1,13 @@
+{
+  "name": "flint-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:desktop": "npm run dev -w apps/desktop",
+    "dev:web": "npm run dev -w apps/web",
+    "electron": "npm run electron -w apps/desktop"
+  }
+}
