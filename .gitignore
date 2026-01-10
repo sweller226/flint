@@ -5,6 +5,7 @@ Thumbs.db
 *.dll
 *.so
 *.dylib
+*.csv
 
 # Node
 node_modules/
