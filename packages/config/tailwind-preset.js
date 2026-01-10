@@ -3,16 +3,20 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                background: "#001219",      // Primary Background
-                panel: "#10141C",           // Surface/Cards
-                "flint-buy": "#94D2BD",     // Long/Positive
-                "flint-sell": "#FF6B6B",    // Short/Negative
-                "flint-warn": "#E9D8A6",    // Warning
-                "flint-text": "#E0E0E0",    // Primary Text
-                "flint-text-muted": "#9A9A9A", // Secondary Text
-            },
-            backgroundImage: {
-                "flint-gradient": "linear-gradient(120deg, #00FFA3, #03E1FF, #DC1FFF)", // Brand Gradient
+                flint: {
+                    bg: "#020617",     // Midnight
+                    panel: "#0F172A",  // Deep Slate
+                    border: "#1E293B", // Border Slate
+                    primary: "#3B82F6", // Professional Blue (Phantom)
+                    secondary: "#10B981", // Emerald
+                    text: {
+                        primary: "#F8FAFC", // White/Slate-50
+                        secondary: "#94A3B8", // Muted Slate
+                    },
+                    positive: "#22C55E", // Green-500
+                    negative: "#EF4444", // Red-500
+                    accent: "#8B5CF6",   // Purple-500
+                },
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', 'sans-serif'],

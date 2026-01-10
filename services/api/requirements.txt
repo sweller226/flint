@@ -9,3 +9,4 @@ python-dotenv
 websockets
 scikit-learn
 base58
+yfinance

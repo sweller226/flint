@@ -35,7 +35,7 @@ echo "[2/2] Starting Web Frontend (Next.js)..."
 
 echo ""
 echo "==================================================="
-echo "       Web Stack Launched! 🚀"
+echo "       Web Stack Launched!"
 echo "==================================================="
 echo "Backend API: http://localhost:8000/docs"
 echo "Web App:     http://localhost:3000"

@@ -1,175 +1,143 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Chart } from "./Chart"; // Import existing Chart component
+import React, { useEffect, useRef, useState } from "react";
+import { createChart, ColorType } from "lightweight-charts";
 
-interface ChartPanelProps {
-    candles: any[];
-    ictLevels: any;
-    symbol?: string;
-    onSymbolChange?: (sym: string) => void;
-    timeframe?: string;
-    onTimeframeChange?: (tf: string) => void;
-}
+export const ChartPanel = () => {
+    const ref = useRef<HTMLDivElement | null>(null);
+    const [symbol, setSymbol] = useState("ES");
+    const [timeframe, setTimeframe] = useState("1m");
+    const chartRef = useRef<any>(null);
+    const candleSeriesRef = useRef<any>(null);
+    const mlSeriesRef = useRef<any>(null);
 
-export const ChartPanel: React.FC<ChartPanelProps> = ({
-    candles, ictLevels, symbol = "ES", onSymbolChange, timeframe = "1m", onTimeframeChange
-}) => {
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const searchInputRef = useRef<HTMLInputElement>(null);
-
-    // Global Keydown Listener for Type-to-Search
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if searching or typing in another input
-            if (isSearchOpen) return;
-            if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
+        if (!ref.current) return;
 
-            // Check if character is alphanumeric
-            if (/^[a-zA-Z0-9]$/.test(e.key)) {
-                setIsSearchOpen(true);
-                setSearchQuery(e.key.toUpperCase());
+        const chart = createChart(ref.current, {
+            layout: {
+                background: { type: ColorType.Solid, color: "#0F172A" }, // flint-panel
+                textColor: "#F8FAFC", // flint-text-primary
+            },
+            grid: {
+                vertLines: { color: "#1E293B" }, // flint-border
+                horzLines: { color: "#1E293B" },
+            },
+            timeScale: {
+                timeVisible: true,
+                borderColor: "#1E293B",
+                rightOffset: 5,
+            },
+            rightPriceScale: {
+                borderColor: "#1E293B",
+                alignLabels: true,
+            },
+            crosshair: {
+                vertLine: { labelBackgroundColor: "#3B82F6" },
+                horzLine: { labelBackgroundColor: "#3B82F6" },
+            }
+        });
+
+        chartRef.current = chart;
+
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: "#10B981", // flint-secondary
+            downColor: "#EF4444", // flint-negative
+            borderVisible: false,
+            wickUpColor: "#10B981",
+            wickDownColor: "#EF4444",
+        });
+        candleSeriesRef.current = candleSeries;
+
+        const mlSeries = chart.addLineSeries({
+            color: '#8B5CF6', // flint-accent
+            lineWidth: 2,
+            lineStyle: 2,
+            title: 'ML Prediction',
+        });
+        mlSeriesRef.current = mlSeries;
+
+        // WebSocket Connection
+        const ws = new WebSocket("ws://localhost:8000/ws/signals");
+
+        ws.onopen = () => {
+            console.log("Connected to WS");
+            ws.send(JSON.stringify({ type: "SUBSCRIBE", symbol: symbol, timeframe: timeframe }));
+        };
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === "CANDLE") {
+                candleSeries.update(msg.data);
+                if (msg.ml) {
+                    mlSeries.update({
+                        time: msg.data.time,
+                        value: msg.ml
+                    });
+                }
             }
         };
 
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isSearchOpen]);
-
-    // Focus input when search opens
-    useEffect(() => {
-        if (isSearchOpen && searchInputRef.current) {
-            searchInputRef.current.focus();
-        }
-    }, [isSearchOpen]);
-
-    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, visible: boolean }>({ x: 0, y: 0, visible: false });
-    const [activeTool, setActiveTool] = useState("cursor");
-
-    // Close context menu on click
-    useEffect(() => {
-        const handleClick = () => setContextMenu({ ...contextMenu, visible: false });
-        window.addEventListener("click", handleClick);
-        return () => window.removeEventListener("click", handleClick);
-    }, [contextMenu]);
-
-    const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setContextMenu({
-            x: e.clientX,
-            y: e.clientY,
-            visible: true
+        const resizeObserver = new ResizeObserver(entries => {
+            if (entries.length === 0 || !entries[0].contentRect) return;
+            const { width, height } = entries[0].contentRect;
+            chart.applyOptions({ width, height });
         });
-    };
+        resizeObserver.observe(ref.current);
 
-    const handleSearchCheck = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            onSymbolChange?.(searchQuery);
-            setIsSearchOpen(false);
-        }
-        if (e.key === "Escape") {
-            setIsSearchOpen(false);
-        }
-    };
+        return () => {
+            ws.close();
+            resizeObserver.disconnect();
+            chart.remove();
+        };
+    }, [symbol, timeframe]);
 
     return (
-        <div className="h-full flex flex-col relative" onContextMenu={handleContextMenu}>
-            {/* Custom Context Menu */}
-            {contextMenu.visible && (
-                <div
-                    className="fixed z-[100] bg-[#1E222D] border border-[#2A2E39] rounded shadow-lg py-2 w-48 text-sm"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                >
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0] flex justify-between">
-                        <span>Reset Chart</span>
-                        <span className="text-[#555]">Alt+R</span>
-                    </div>
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0]">Copy Price</div>
-                    <div className="my-1 border-t border-[#2A2E39]"></div>
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0]">Add Alert...</div>
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0]">Trade {symbol}</div>
-                    <div className="my-1 border-t border-[#2A2E39]"></div>
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0]">Settings...</div>
-                </div>
-            )}
-
-            {/* Symbol Search Modal (TradingView Style) */}
-            {isSearchOpen && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setIsSearchOpen(false)}>
-                    <div className="bg-[#1E222D] border border-[#2A2E39] rounded-lg shadow-2xl w-[400px] overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between">
-                            <h3 className="text-[#E0E0E0] font-medium">Symbol Search</h3>
-                            <button onClick={() => setIsSearchOpen(false)} className="text-[#9A9A9A] hover:text-white">✕</button>
-                        </div>
-                        <div className="p-4">
-                            <input
-                                ref={searchInputRef}
-                                className="w-full bg-[#10141C] border border-[#2A2E39] rounded px-3 py-2 text-xl text-white uppercase outline-none focus:border-[#2962FF]"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value.toUpperCase())}
-                                onKeyDown={handleSearchCheck}
-                                placeholder="Symbol (e.g. BTC)"
-                            />
-                            <div className="mt-4 text-[#9A9A9A] text-xs">
-                                Press <span className="text-[#E0E0E0] font-bold">ENTER</span> to select
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Chart header: tabs like Kraken */}
-            <div className="flex items-center justify-between px-3 h-10 border-b border-[#10141C] text-[11px] bg-[#050B10]">
-                <div className="flex gap-2 items-center">
-                    <div className="flex items-center bg-[#10141C] rounded border border-[#1A202C] px-2 py-1 cursor-pointer hover:border-[#2962FF] transition-colors" onClick={() => setIsSearchOpen(true)}>
-                        <span className="text-[#9A9A9A] mr-2">Ticker:</span>
-                        <span className="text-[#E0E0E0] font-bold w-16 text-center block">{symbol}</span>
-                    </div>
-
-                    <div className="flex bg-[#10141C] rounded border border-[#1A202C]">
-                        {['1m', '5m', '15m', '1h', '4h'].map(tf => (
+        <div className="h-full flex flex-col bg-flint-panel">
+            {/* header of chart */}
+            <div className="h-10 border-b border-flint-border flex items-center justify-between px-3 text-[11px] text-flint-text-secondary bg-flint-panel">
+                <div className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                        {["ES", "BTC"].map(s => (
                             <button
-                                key={tf}
-                                onClick={() => onTimeframeChange?.(tf)}
-                                className={`px-2 py-1 hover:bg-[#202530] transition-colors ${timeframe === tf ? 'text-[#00E5FF] font-bold' : 'text-[#9A9A9A]'}`}
+                                key={s}
+                                onClick={() => setSymbol(s)}
+                                className={`px-2 py-0.5 rounded font-bold transition-all ${symbol === s ? "bg-flint-primary text-white" : "hover:text-flint-text-primary"}`}
                             >
-                                {tf}
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="w-px h-4 bg-flint-border my-auto"></div>
+                    <div className="flex items-center gap-2">
+                        {["1m", "5m", "15m"].map(t => (
+                            <button
+                                key={t}
+                                onClick={() => setTimeframe(t)}
+                                className={`px-1.5 rounded transition-all ${timeframe === t ? "text-flint-primary font-bold" : "hover:text-flint-text-primary"}`}
+                            >
+                                {t}
                             </button>
                         ))}
                     </div>
                 </div>
-                <div className="flex gap-2 text-[#9A9A9A]">
-                    <button className="px-2 py-1 hover:bg-[#10141C] rounded transition-colors">Candles</button>
-                    <button className="px-2 py-1 hover:bg-[#10141C] rounded transition-colors">Indicators</button>
-                    <button className="px-2 py-1 hover:bg-[#10141C] rounded transition-colors">Layouts</button>
+                <div className="flex gap-2">
+                    <button className="px-2 py-1 rounded hover:bg-flint-bg transition-all">Indicators</button>
+                    <button className="px-2 py-1 rounded hover:bg-flint-bg transition-all">Overlays</button>
+                    <button className="ml-2 p-1 text-flint-text-primary">⚙️</button>
                 </div>
             </div>
 
-            {/* Chart area */}
-            <div className="flex-1 flex relative">
-                {/* Left tools column (Genuine TV interactions) */}
-                <div className="w-12 border-r border-[#10141C] flex flex-col items-center gap-1 py-2 text-[#9A9A9A] text-[16px] bg-[#050B10]">
-                    {['cursor', 'trend', 'fib', 'brush', 'text', 'ruler'].map(tool => (
-                        <button
-                            key={tool}
-                            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${activeTool === tool ? 'text-[#2962FF] bg-[#10141C]' : 'hover:text-[#E0E0E0] hover:bg-[#10141C]'}`}
-                            onClick={() => setActiveTool(tool)}
-                        >
-                            {tool === 'cursor' && '✛'}
-                            {tool === 'trend' && '╱'}
-                            {tool === 'fib' && '≡'}
-                            {tool === 'brush' && '🖌️'}
-                            {tool === 'text' && 'T'}
-                            {tool === 'ruler' && '📏'}
-                        </button>
-                    ))}
+            <div className="flex-1 flex overflow-hidden">
+                {/* tools column */}
+                <div className="w-10 border-r border-flint-border flex flex-col items-center gap-5 py-4 text-[16px] text-flint-text-secondary bg-flint-panel">
+                    <button className="hover:text-flint-primary transition-colors tooltip" title="Draw">✏️</button>
+                    <button className="hover:text-flint-primary transition-colors tooltip" title="Line">➖</button>
+                    <button className="hover:text-flint-primary transition-colors tooltip" title="Fib">📐</button>
+                    <button className="hover:text-flint-primary transition-colors tooltip" title="Reset">🔄</button>
                     <div className="flex-1"></div>
-                    <button className="w-8 h-8 flex items-center justify-center rounded hover:text-[#E0E0E0] hover:bg-[#10141C] mb-2">🗑️</button>
+                    <button className="hover:text-flint-primary transition-colors text-[12px] opacity-50">📷</button>
                 </div>
-
-                {/* Chart container */}
-                <div className="flex-1 bg-[#001219] relative">
-                    <Chart candles={candles} ictLevels={ictLevels} />
-                </div>
+                {/* chart area */}
+                <div ref={ref} className="flex-1 relative" />
             </div>
         </div>
     );

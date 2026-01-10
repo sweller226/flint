@@ -21,10 +21,9 @@ class ICTEngine:
         df["hour"] = df["timestamp"].dt.hour
         df["session"] = "Overnight"
 
-        # Simplified logic for hackathon (ignoring timezone details for now, assuming data is EST or UTC adjusted)
-        # TODO: handling timezones properly in production
-        df.loc[(df["hour"] >= 21) | (df["hour"] < 2), "session"] = "Asian"
-        df.loc[(df["hour"] >= 2) & (df["hour"] < 8), "session"] = "London"
+        # Updated logic based on user request: Asia 7pm (19), London 3am (3)
+        df.loc[(df["hour"] >= 19) | (df["hour"] < 3), "session"] = "Asian"
+        df.loc[(df["hour"] >= 3) & (df["hour"] < 8), "session"] = "London"
         df.loc[(df["hour"] >= 8) & (df["hour"] < 17), "session"] = "New York"
 
         return df

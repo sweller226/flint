@@ -1,16 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 
-export const OrderPanel: React.FC = () => {
+export const OrderPanel = () => {
+    const [activeTab, setActiveTab] = useState("Order");
+    const [side, setSide] = useState<"BUY" | "SELL">("BUY");
+    const [price, setPrice] = useState("4808.25");
+    const [quantity, setQuantity] = useState("1.00");
+    const [risk, setRisk] = useState(1); // Percentage
+
+    const handlePlaceOrder = () => {
+        alert(`${side} ${quantity} ES at ${price} placed (simulated)`);
+    };
+
     return (
-        <div className="h-full flex flex-col">
-            {/* Tabs: Order form / Order book / Market */}
-            <div className="flex text-[11px] border-b border-[#10141C]">
-                {["Order form", "Order book", "Market"].map((tab, idx) => (
+        <div className="h-full flex flex-col text-xs font-medium">
+            {/* Tabs */}
+            <div className="flex bg-flint-bg p-1 rounded-full mb-6">
+                {["Order", "Book", "Depth"].map((tab) => (
                     <button
                         key={tab}
-                        className={`flex-1 py-3 text-center transition-colors ${idx === 0
-                                ? "border-b-2 border-[#00FFA3] text-[#E0E0E0] font-semibold"
-                                : "text-[#9A9A9A] hover:bg-[#0D151D] hover:text-[#E0E0E0]"
+                        onClick={() => setActiveTab(tab)}
+                        className={`flex-1 py-1.5 rounded-full text-[11px] transition-all duration-200 ${activeTab === tab
+                            ? "bg-flint-panel text-flint-text-primary shadow-lg"
+                            : "text-flint-text-secondary hover:text-flint-text-primary"
                             }`}
                     >
                         {tab}
@@ -18,62 +29,101 @@ export const OrderPanel: React.FC = () => {
                 ))}
             </div>
 
-            {/* Buy / Sell toggle */}
-            <div className="flex justify-center gap-2 p-3 text-[11px]">
-                <button className="flex-1 py-1.5 rounded bg-[#123524] text-[#94D2BD] font-bold border border-transparent hover:border-[#94D2BD]/30 transition-all">
+            {/* Buy/Sell toggle */}
+            <div className="flex gap-2 mb-6">
+                <button
+                    onClick={() => setSide("BUY")}
+                    className={`flex-1 py-2.5 rounded-xl font-bold transition-all duration-200 border ${side === "BUY"
+                            ? "bg-flint-positive/10 border-flint-positive text-flint-positive"
+                            : "bg-flint-bg border-flint-border text-flint-text-secondary hover:border-flint-text-secondary/50"
+                        }`}
+                >
                     Buy
                 </button>
-                <button className="flex-1 py-1.5 rounded bg-[#200b11] text-[#FF6B6B] font-bold border border-transparent hover:border-[#FF6B6B]/30 transition-all">
+                <button
+                    onClick={() => setSide("SELL")}
+                    className={`flex-1 py-2.5 rounded-xl font-bold transition-all duration-200 border ${side === "SELL"
+                            ? "bg-flint-negative/10 border-flint-negative text-flint-negative"
+                            : "bg-flint-bg border-flint-border text-flint-text-secondary hover:border-flint-text-secondary/50"
+                        }`}
+                >
                     Sell
                 </button>
             </div>
 
-            {/* Fields */}
-            <div className="px-3 flex-1 overflow-auto text-[11px]">
-                <div className="mb-3">
-                    <div className="flex justify-between mb-1 text-[#9A9A9A]">
-                        <span>Limit price</span>
-                        <span>USD</span>
+            {/* Inputs */}
+            <div className="flex-1 overflow-auto -mx-2 px-2 scrollbar-none">
+                <Field
+                    label="Limit price"
+                    value={price}
+                    onChange={setPrice}
+                    suffix="USD"
+                />
+                <Field
+                    label="Quantity"
+                    value={quantity}
+                    onChange={setQuantity}
+                    suffix="ES"
+                />
+
+                <div className="mt-6 mb-8">
+                    <div className="flex justify-between text-flint-text-secondary text-[11px] mb-3">
+                        <span className="font-semibold uppercase tracking-wider">Risk per trade</span>
+                        <span className="text-flint-primary font-bold">{risk.toFixed(1)}%</span>
                     </div>
-                    <div className="bg-[#001219] rounded px-3 py-2 border border-[#10141C] text-[#E0E0E0] font-mono">
-                        4808.25
+                    <div className="px-1">
+                        <input
+                            type="range"
+                            min="0.1"
+                            max="5"
+                            step="0.1"
+                            value={risk}
+                            onChange={(e) => setRisk(parseFloat(e.target.value))}
+                            className="w-full h-1.5 bg-flint-bg rounded-full appearance-none cursor-pointer accent-flint-primary"
+                        />
                     </div>
                 </div>
 
-                <div className="mb-3">
-                    <div className="flex justify-between mb-1 text-[#9A9A9A]">
-                        <span>Quantity</span>
-                        <span>ES</span>
-                    </div>
-                    <div className="bg-[#001219] rounded px-3 py-2 border border-[#10141C] flex items-center justify-between">
-                        <span className="font-mono text-[#E0E0E0]">1</span>
-                        <span className="text-[#9A9A9A] text-[10px]">≈ $240,000 notional</span>
-                    </div>
-                </div>
-
-                {/* Slider placeholder */}
-                <div className="mb-4">
-                    <div className="flex justify-between text-[#9A9A9A] mb-1">
-                        <span>Risk per trade</span>
-                        <span>1.0%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-[#10141C] overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-[#00FFA3] to-[#03E1FF] w-1/4 rounded-full" />
-                    </div>
-                </div>
-
-                {/* Summary */}
-                <div className="bg-[#001219] border border-[#10141C] rounded p-2 text-[#9A9A9A] mb-4 leading-relaxed">
-                    Buy <span className="text-[#E0E0E0]">1 ES contract</span> at <span className="text-[#E0E0E0]">4808.25</span>, risk ~ $400, target 4820.50 (R:R 3.2).
+                <div className="bg-flint-bg/50 border border-flint-border rounded-xl p-4 text-flint-text-secondary text-[11px] leading-relaxed italic">
+                    {side === "BUY" ? "Buy" : "Sell"} {quantity} ES at {price} with {(parseFloat(price) * 0.002).toFixed(2)} point stop (≈ ${Math.round(risk * 400)} risk) and {(parseFloat(price) * 0.003).toFixed(2)} point target.
                 </div>
             </div>
 
-            {/* Submit button */}
-            <div className="p-3 mt-auto">
-                <button className="w-full py-2.5 rounded bg-gradient-to-r from-[#00FFA3] to-[#03E1FF] text-[#001219] text-[12px] font-bold hover:shadow-[0_0_15px_rgba(0,255,163,0.3)] transition-all transform active:scale-[0.98]">
-                    Place Sim Order
+            {/* Submit */}
+            <div className="mt-4 pt-4 border-t border-flint-border">
+                <button
+                    onClick={handlePlaceOrder}
+                    className={`w-full py-3 rounded-xl text-white text-xs font-bold shadow-lg transition-all active:scale-[0.98] ${side === "BUY" ? "bg-flint-positive shadow-green-500/20" : "bg-flint-negative shadow-red-500/20"
+                        }`}
+                >
+                    Place simulated {side.toLowerCase()} order
                 </button>
+                <p className="mt-3 text-[10px] text-center text-flint-text-secondary leading-tight">
+                    Flint executes against historical ES data logs on Solana devnet.
+                </p>
             </div>
         </div>
     );
 };
+
+const Field = ({ label, value, suffix, onChange }: { label: string; value: string; suffix?: string; onChange: (v: string) => void }) => (
+    <div className="mb-5">
+        <div className="flex justify-between mb-2 text-flint-text-secondary text-[10px] uppercase tracking-widest font-bold">
+            <span>{label}</span>
+            {suffix && <span>{suffix}</span>}
+        </div>
+        <div className="bg-flint-bg rounded-xl px-4 py-3 border border-flint-border flex items-center justify-between hover:border-flint-primary/30 transition-all focus-within:border-flint-primary/50 focus-within:ring-1 focus-within:ring-flint-primary/20">
+            <input
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="bg-transparent text-flint-text-primary text-sm font-bold w-full outline-none"
+            />
+            {suffix && (
+                <span className="text-flint-text-secondary text-[10px] bg-flint-panel px-2 py-0.5 rounded-lg border border-flint-border ml-3 font-bold">
+                    {suffix}
+                </span>
+            )}
+        </div>
+    </div>
+);
