@@ -27,7 +27,7 @@ export const ChartPanel = () => {
 
                 if (res.data && res.data.candles) {
                     const mapped = res.data.candles.map((c: any) => ({
-                        time: c.timestamp, // Lightweight charts supports ISO string
+                        time: Date.parse(c.timestamp) / 1000,
                         open: c.open,
                         high: c.high,
                         low: c.low,
