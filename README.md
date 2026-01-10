@@ -12,20 +12,20 @@ Hackathon project scaffolding for high-frequency day trading terminal using Elec
 
 ## Getting Started
 
-### Quick Start (Windows)
-We provide One-Click Batch scripts for easy launching.
+### Quick Start
+We provide One-Click scripts for easy launching.
 
 **Option 1: Full Stack (Recommended)**
 Launches Backend + Marketing Site + Electron Desktop App.
-```bash
-.\start_flint.bat
-```
+
+*   **Windows**: `.\start_flint.bat`
+*   **Mac/Linux**: `./start_flint.sh` (Run `chmod +x start_flint.sh` first)
 
 **Option 2: Web Only**
 Launches Backend + Marketing Site (access via browser).
-```bash
-.\start_web.bat
-```
+
+*   **Windows**: `.\start_web.bat`
+*   **Mac/Linux**: `./start_web.sh`
 
 ### Manual Mode
 If you prefer to run services individually:

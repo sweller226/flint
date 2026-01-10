@@ -1,22 +1,18 @@
 # Flint Terminal - Run Instructions
 
-This guide explains how to run tThe easiest way to run Flint is using the provided Batch scripts.
+This guide explains how to run tThe easiest way to run Flint is using the provided launch scripts.
 
 ### Option 1: Full Stack (Desktop App)
 Use this to run the **Electron Desktop App**, along with the backend and marketing site.
 
-```bash
-.\start_flint.bat
-```
-
-This will open separate terminal windows for each service and launch the Electron app.
+*   **Windows**: `.\start_flint.bat`
+*   **Mac**: `./start_flint.sh`
 
 ### Option 2: Web Only (Browser)
 Use this if you only want to work on the **Marketing Website** or test the terminal in a browser (at `http://localhost:3000`).
 
-```bash
-.\start_web.bat
-```
+*   **Windows**: `.\start_web.bat`
+*   **Mac**: `./start_web.sh`
 
 This will open separate terminal windows for each service and launch the Electron app.
 
