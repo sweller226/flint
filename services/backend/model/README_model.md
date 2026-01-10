@@ -1,0 +1,115 @@
+# The Goal
+## Data
+- ts_event
+- rtype
+- publisher_id
+- instrument_id
+- open
+- high
+- low
+- close
+- volume
+- symbol
+## Time Series Forecasting
+- We want to predict for one hour (1 minute period):
+	- Open
+	- High
+	- Low
+	- Close
+	- Volume
+- Given:
+	- Open
+	- High
+	- Low
+	- Close
+	- Volume
+- Typically go with most recent expiration
+	- H = March
+	- M = June
+	- U = September
+	- Z = December
+	- We'll split it into 4 time series forecasts, we give the relevant one to the agent to make decisions on
+## Decision Making Agent
+- Given:
+	- Open
+	- High
+	- Low
+	- Close
+	- Volume
+- We want to make the following decisions with a budget B at time t:
+	- Buy X
+	- Sell Y
+	- 0 < X <= 4
+	- 0 < Y <= X
+# The How
+## Data 
+- We will have to conduct data cleaning
+	- Remove NaN
+	- Remove interval tickers
+	- Split data between H, M, U, Z
+	- Drop unneeded columns
+	- Parse ts_event so that it's a datetime column we can use (regex)
+## Time Series Forecasting 
+- We have data that contains the historical data of the E-mini S&P 500 Futures
+	- From 2016 to 2026 (last 10 years as of Jan. 10)
+	- Data is provided for every minute in that time frame
+- We can split the data so that we have training, validation, and test sets
+- We want to give the model the past week's worth of data to then make a prediction on the last hour of the given dataset 
+	- One sample would be the past 7 trading days
+		- We show everything but the last hour of the sample to the model
+		- The model then predicts the last hour (forecasting)
+		- We compare prediction vs actual using some loss function
+	- We split the data into disjoint samples
+		- We split the samples into training, validation, test
+			- 80/10/10
+- The issue with this data splitting is that we lose the relationship across the entire timeframe since we only focus on one week at a time, which may not give any discernible pattern that the model can learn
+- We want to provide the decision making agent a forecast with a probability that it will occur
+	- This will help inform the agent of the possible future so that it can better make decisions
+- We will want to use time series forecasting models like ARIMA to do this
+	- Could use pycaret for various models
+	- Should use tsfresh for feature engineering 
+	- Lags
+	- Should use optuna/hyperopt for hyperparameter tuning
+## Decision Making Agent 
+- Given the time series of a week, we want the agent to make trades
+	- *These are possible features we can consider*
+		- *Use past week very lightly*
+		- *Use past 24 hours for my bias*
+		- *Use past 4 hours mainly*
+		- *Use past 2 hours rigorously*
+		- *Use past 1 hour as a basis for the trade*
+- We want to make the decision to buy or sell up to 4 contracts to profit 
+- To do this, we'll need a means to identify what patterns will help the agent determine what decisions to make
+- We also need the actual environment that the agent can act on before doing any reinforcement learning
+- State
+	- This is the information that the environment provides which the agent can interact with
+		- Open
+		- High
+		- Low
+		- Close
+		- Volume
+	- $s = \{open, high, low, close, volume\}$
+- Stages
+	- This is the timestep that we are at in the simulation
+	- $t = 0, 1, 2,..., T$ $\forall  t \in T$
+- Actions
+	- These are the possible actions the agent can actually take at a given stage
+	- Let $x \in \{buy, sell\}$
+	- Let $y \in \{1, 2, 3, 4\}$
+	- i.e. action $a = \{x,y\}$
+		- $a = \{buy, 1\}$
+	- We would need constraints on selling where $y \leq x$
+- Immediate Reward
+	- This is the actual payout from making a decision
+	- We want sell - buy in a long position
+	- We want buy - sell in a short position 
+	- Multiplied by leverage and multiplied by number of contracts
+	- *Ask chat to decide how to compute this payout*
+- Return
+	- This is the overall discounted payout that we need to tune hyperparameters for
+		- alpha
+		- beta
+	- In general this would be the sum of the rewards for the entire trading session of the agent from $t = 0$ to $t = T$
+- Once we have the simulation, we can start training the agent
+	- Use different RL methods, maybe soft actor-critic policy (SAC) and PPO
+
