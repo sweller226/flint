@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from .solana_log import log_trade_to_solana
+from solana.log import log_trade_to_solana
 
 router = APIRouter()
 

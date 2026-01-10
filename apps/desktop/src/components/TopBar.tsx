@@ -10,7 +10,7 @@ export const TopBar = () => (
                 <span className="h-2 w-2 rounded-full bg-flint-secondary animate-pulse" />
                 <span className="font-bold text-flint-text-primary uppercase tracking-wider">ES Futures</span>
                 <span className="opacity-30">|</span>
-                <span className="uppercase tracking-widest font-semibold">Replay</span>
+                <span className="uppercase tracking-widest font-semibold italic text-flint-accent">Replay: Jan 03, 2017</span>
             </div>
         </div>
 
