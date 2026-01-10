@@ -42,14 +42,14 @@
 	- 0 < X <= 4
 	- 0 < Y <= X
 # The How
-## Data 
+## Data (Bovey)
 - We will have to conduct data cleaning
 	- Remove NaN
 	- Remove interval tickers
 	- Split data between H, M, U, Z
 	- Drop unneeded columns
 	- Parse ts_event so that it's a datetime column we can use (regex)
-## Time Series Forecasting 
+## Time Series Forecasting (Edwyn)
 - We have data that contains the historical data of the E-mini S&P 500 Futures
 	- From 2016 to 2026 (last 10 years as of Jan. 10)
 	- Data is provided for every minute in that time frame
@@ -70,7 +70,7 @@
 	- Should use tsfresh for feature engineering 
 	- Lags
 	- Should use optuna/hyperopt for hyperparameter tuning
-## Decision Making Agent 
+## Decision Making Agent (Edwyn)
 - Given the time series of a week, we want the agent to make trades
 	- *These are possible features we can consider*
 		- *Use past week very lightly*
@@ -94,11 +94,9 @@
 	- $t = 0, 1, 2,..., T$ $\forall  t \in T$
 - Actions
 	- These are the possible actions the agent can actually take at a given stage
-	- Let $x \in \{buy, sell\}$
-	- Let $y \in \{1, 2, 3, 4\}$
-	- i.e. action $a = \{x,y\}$
-		- $a = \{buy, 1\}$
-	- We would need constraints on selling where $y \leq x$
+	- Let $x \in \{buy, sell, do nothing\}$
+	- We would need constraints on selling where you can only sell if you have bought in the past (and buy is at max 1)
+		- We would have to store the information of whether the agent has bought or not in some state then
 - Immediate Reward
 	- This is the actual payout from making a decision
 	- We want sell - buy in a long position
@@ -113,3 +111,18 @@
 - Once we have the simulation, we can start training the agent
 	- Use different RL methods, maybe soft actor-critic policy (SAC) and PPO
 
+# Limitations
+- Data is imbalanced across contract types (H, M, U, Z)
+- We only do buy/sell, no volume in contracts at the moment just want to show it can buy and sell at the right times
+- We have a hard time doing real-time analysis
+	- Given a timeframe of the past 7 days, we then forecast the next hour
+	- The agent has to decide at each minute when to buy and when to sell 1 contract within the hour and how many times to do so
+	- As the hour progresses though, we get new information which should be fed to the agent rather than the forecast (a.k.a the next minute that passes)
+	- The agent should then revamp its decision making given the new real-time data rather than the outdated forecast
+	- How do we re-invent the forecast and feed it to the agent after a minute passes then?
+		- Make a forecast for the next hour at the given timestep
+		- Agent makes a buy/sell/do nothing decision
+		- Timestep increments
+		- New forecast for next hour at incremented timestep
+		- Agent makes a buy/sell/do nothing decision
+	- We would also need to keep track of what the agent has done thus far
