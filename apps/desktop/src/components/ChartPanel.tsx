@@ -23,7 +23,7 @@ export const ChartPanel = () => {
             setError(null);
             try {
                 // Fetch data from new backend
-                const res = await axios.get(`http://localhost:8000/api/candles?limit=1000`, { timeout: 5000 });
+                const res = await axios.get(`http://localhost:8000/api/candles?limit=1000`, { timeout: 30000 });
 
                 if (res.data && res.data.candles) {
                     const mapped = res.data.candles.map((c: any) => ({
