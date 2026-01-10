@@ -42,14 +42,14 @@
 	- 0 < X <= 4
 	- 0 < Y <= X
 # The How
-## Data (Bovey)
+## Data 
 - We will have to conduct data cleaning
 	- Remove NaN
 	- Remove interval tickers
 	- Split data between H, M, U, Z
 	- Drop unneeded columns
 	- Parse ts_event so that it's a datetime column we can use (regex)
-## Time Series Forecasting (Edwyn)
+## Time Series Forecasting 
 - We have data that contains the historical data of the E-mini S&P 500 Futures
 	- From 2016 to 2026 (last 10 years as of Jan. 10)
 	- Data is provided for every minute in that time frame
@@ -70,7 +70,7 @@
 	- Should use tsfresh for feature engineering 
 	- Lags
 	- Should use optuna/hyperopt for hyperparameter tuning
-## Decision Making Agent (Edwyn)
+## Decision Making Agent
 - Given the time series of a week, we want the agent to make trades
 	- *These are possible features we can consider*
 		- *Use past week very lightly*
