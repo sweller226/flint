@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.dependencies import get_available_contracts
+from api.api.dependencies import get_available_contracts
 
 router = APIRouter(tags=["contracts"])
 

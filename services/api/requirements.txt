@@ -5,3 +5,4 @@ numpy
 pydantic
 websockets
 python-multipart
+base58

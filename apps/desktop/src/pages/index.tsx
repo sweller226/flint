@@ -1,7 +1,6 @@
 import React from "react";
 import { TopBar } from "../components/TopBar";
 import { ChartPanel } from "../components/ChartPanel";
-import { RightRail } from "../components/RightRail";
 
 export default function Home() {
     return (
@@ -13,10 +12,6 @@ export default function Home() {
                     <div className="flex-1 min-w-0">
                         <ChartPanel />
                     </div>
-
-                    <aside className="w-[300px] flex flex-col gap-3 min-w-0">
-                        <RightRail />
-                    </aside>
                 </main>
             </div>
         </div>

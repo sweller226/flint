@@ -3,9 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
 
-from api.routes import candles, ict, volume, contracts
-from api.dependencies import initialize_market_state
-
+from api.api.routes import candles, ict, volume, contracts, forecast
+from api.api.dependencies import initialize_market_state
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,12 +39,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
+# Include routers with /api prefix for frontend
 app.include_router(candles.router, prefix='/api')
 app.include_router(ict.router, prefix='/api')
 app.include_router(volume.router, prefix='/api')
 app.include_router(contracts.router, prefix='/api')
-
+app.include_router(forecast.router, prefix="/api")
 
 @app.get("/")
 async def root():

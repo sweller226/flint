@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from typing import Optional, Dict
 import pandas as pd
 import os
-from services.market_state import MarketState, load_data
+from api.services.market_state import MarketState, load_data
 
 # Contract code to human-readable name mapping
 CONTRACT_INFO = {
@@ -15,7 +15,6 @@ CONTRACT_INFO = {
 # Registry of loaded MarketState instances per contract
 _contract_states: Dict[str, MarketState] = {}
 _data_dir: Optional[str] = None
-
 
 def get_market_state(contract: str = "H") -> MarketState:
     """Get the MarketState instance for a specific contract."""
@@ -63,15 +62,6 @@ def initialize_market_state(data_path: str) -> None:
     # Check if data_path is a directory containing contract files
     if os.path.isdir(data_path):
         _data_dir = data_path
-    else:
-        # Legacy: single file mode - check if es_futures directory exists nearby
-        parent_dir = os.path.dirname(data_path)
-        es_futures_dir = os.path.join(parent_dir, "data", "es_futures")
-        if os.path.isdir(es_futures_dir):
-            _data_dir = es_futures_dir
-        else:
-            # Fallback: use the file's directory
-            _data_dir = parent_dir
     
     print(f"[OK] Market data directory set to: {_data_dir}")
     

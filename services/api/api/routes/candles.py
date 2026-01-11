@@ -1,8 +1,8 @@
 import pandas as pd
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
-from api.models import CandleResponse, CandlesListResponse
-from api.dependencies import get_market_state, parse_timestamp
+from api.api.models import CandleResponse, CandlesListResponse
+from api.api.dependencies import get_market_state, parse_timestamp
 
 router = APIRouter(tags=["candles"])
 

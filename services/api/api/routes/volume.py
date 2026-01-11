@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Optional
 import pandas as pd
-from api.models import VolumeProfileResponse, VolumeBinResponse
-from api.dependencies import get_market_state, parse_timestamp
-from services.market_state import MarketState, compute_volume_metrics
+from api.api.models import VolumeProfileResponse, VolumeBinResponse
+from api.api.dependencies import get_market_state, parse_timestamp
+from api.services.market_state import MarketState, compute_volume_metrics
 
 router = APIRouter(prefix="/volume", tags=["volume"])
 

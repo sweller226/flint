@@ -8,9 +8,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from trading.ict_engine import ICTEngine
-from trading.volume_engine import VolumeEngine
-from routes import router as api_router
+from routes import router
 
 load_dotenv()
 
@@ -25,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router)
+app.include_router(router)
 
 # WebSocket Manager
 class ConnectionManager:
@@ -48,10 +46,6 @@ from ml.engine import MLEngine
 ict_engine = ICTEngine()
 volume_engine = VolumeEngine()
 ml_engine = MLEngine()
-
-import yfinance as yf
-
-# ... (Previous imports remain, but we replace the mock logic)
 
 # Data Manager
 class DataManager:

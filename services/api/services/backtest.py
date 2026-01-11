@@ -2,7 +2,7 @@ import asyncio
 from typing import Optional, List
 from datetime import datetime
 import pandas as pd
-from services.market_state import MarketState, Candle
+from api.services.market_state import MarketState, Candle
 
 class BacktestSession:
     def __init__(self, market_state: MarketState):
