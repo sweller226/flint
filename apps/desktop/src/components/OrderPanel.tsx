@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useSimulation } from "../context/SimulationContext";
 
 export const OrderPanel = () => {
+    const { portfolio, placeOrder } = useSimulation();
     const [activeTab, setActiveTab] = useState("Order");
     const [side, setSide] = useState<"BUY" | "SELL">("BUY");
     const [price, setPrice] = useState("4808.25");
@@ -8,7 +10,7 @@ export const OrderPanel = () => {
     const [risk, setRisk] = useState(1); // Percentage
 
     const handlePlaceOrder = () => {
-        alert(`${side} ${quantity} ES at ${price} placed (simulated)`);
+        placeOrder(side, parseFloat(quantity));
     };
 
     return (
@@ -29,13 +31,29 @@ export const OrderPanel = () => {
                 ))}
             </div>
 
+            {/* Portfolio Summary */}
+            {portfolio && (
+                <div className="mb-4 bg-flint-subpanel p-2 rounded border border-flint-border text-[10px]">
+                    <div className="flex justify-between">
+                        <span className="text-flint-text-muted">Balance</span>
+                        <span className="text-white">${portfolio.balance?.toFixed(2)}</span>
+                    </div>
+                    {Object.values(portfolio.positions || {}).map((pos: any) => (
+                        <div key={pos.symbol} className="flex justify-between mt-1">
+                            <span className={pos.side === 'LONG' ? "text-flint-positive" : "text-flint-negative"}>{pos.side} {pos.size} {pos.symbol}</span>
+                            <span className={pos.unrealized_pnl >= 0 ? "text-flint-positive" : "text-flint-negative"}>${pos.unrealized_pnl?.toFixed(2)}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {/* Buy/Sell toggle */}
             <div className="flex gap-2 mb-6">
                 <button
                     onClick={() => setSide("BUY")}
                     className={`flex-1 py-2.5 rounded-xl font-bold transition-all duration-200 border ${side === "BUY"
-                            ? "bg-flint-positive/10 border-flint-positive text-flint-positive"
-                            : "bg-flint-bg border-flint-border text-flint-text-secondary hover:border-flint-text-secondary/50"
+                        ? "bg-flint-positive/10 border-flint-positive text-flint-positive"
+                        : "bg-flint-bg border-flint-border text-flint-text-secondary hover:border-flint-text-secondary/50"
                         }`}
                 >
                     Buy
@@ -43,8 +61,8 @@ export const OrderPanel = () => {
                 <button
                     onClick={() => setSide("SELL")}
                     className={`flex-1 py-2.5 rounded-xl font-bold transition-all duration-200 border ${side === "SELL"
-                            ? "bg-flint-negative/10 border-flint-negative text-flint-negative"
-                            : "bg-flint-bg border-flint-border text-flint-text-secondary hover:border-flint-text-secondary/50"
+                        ? "bg-flint-negative/10 border-flint-negative text-flint-negative"
+                        : "bg-flint-bg border-flint-border text-flint-text-secondary hover:border-flint-text-secondary/50"
                         }`}
                 >
                     Sell

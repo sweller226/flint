@@ -1,41 +1,60 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { useSimulation } from "../context/SimulationContext";
+import { OrderPanel } from "./OrderPanel";
 
 export const RightRail = () => {
+    const { candles } = useSimulation();
+    // Local state for mock chat
     const [messages, setMessages] = useState<any[]>([]);
     const [signals, setSignals] = useState<any[]>([]);
     const [inputText, setInputText] = useState("");
     const [isTyping, setIsTyping] = useState(false);
-    const ws = useRef<WebSocket | null>(null);
 
+    // Mock signal generation based on price changes
     useEffect(() => {
-        const socket = new WebSocket("ws://localhost:8000/ws/signals");
-        ws.current = socket;
+        if (candles.length < 2) return;
 
-        socket.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if (msg.type === "SIGNAL") {
-                setSignals(prev => [msg.data, ...prev].slice(0, 10));
-            } else if (msg.type === "CHAT_RESPONSE") {
-                setIsTyping(false);
-                setMessages(prev => [...prev, { role: "ai", text: msg.text }]);
-            }
-        };
+        const last = candles[candles.length - 1];
+        const prev = candles[candles.length - 2];
+        const change = last.close - prev.close;
 
-        return () => socket.close();
-    }, []);
+        // Randomly generate a signal if significant move
+        if (Math.abs(change) > 2 && Math.random() > 0.7) {
+            const side = change > 0 ? "LONG" : "SHORT";
+            const newSig = {
+                side,
+                reason: `Momentum detected: price moved ${change.toFixed(2)} pts. AI suggests continuation.`,
+                confidence: 0.7 + (Math.random() * 0.25)
+            };
+            setSignals(prev => [newSig, ...prev].slice(0, 10));
+        }
+    }, [candles]);
 
+    // Mock Chat
     const sendMessage = () => {
-        if (!inputText.trim() || !ws.current) return;
+        if (!inputText.trim()) return;
 
         const userMsg = inputText;
         setMessages(prev => [...prev, { role: "user", text: userMsg }]);
-        ws.current.send(JSON.stringify({ type: "CHAT", text: userMsg }));
         setInputText("");
         setIsTyping(true);
+
+        setTimeout(() => {
+            setIsTyping(false);
+            setMessages(prev => [...prev, {
+                role: "ai",
+                text: "I am running in local simulation mode. I can track the mock signals for you."
+            }]);
+        }, 1000);
     };
 
     return (
         <div className="flex flex-col gap-4 h-full">
+            {/* Order Panel */}
+            <div className="h-[420px] rounded-2xl bg-flint-panel border border-flint-border p-4 shadow-2xl shadow-black/50 overflow-hidden">
+                <OrderPanel />
+            </div>
+
             {/* Signals */}
             <div className="flex-1 rounded-2xl bg-flint-panel border border-flint-border p-4 overflow-hidden flex flex-col shadow-2xl shadow-black/50">
                 <div className="flex justify-between items-center mb-4">
