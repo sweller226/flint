@@ -14,12 +14,19 @@ def main() -> None:
 	parser.add_argument("--model", required=True, help="Path to PPO .zip model")
 	parser.add_argument("--max-samples", type=int, default=50)
 	parser.add_argument("--holding-penalty", type=float, default=0.0)
+	parser.add_argument("--holding-penalty-start-step", type=int, default=0)
 	parser.add_argument("--flat-penalty", type=float, default=0.0)
+	parser.add_argument("--flat-penalty-start-step", type=int, default=0)
 	parser.add_argument("--hold-action-penalty", type=float, default=0.0)
+	parser.add_argument("--hold-action-penalty-start-step", type=int, default=0)
 	parser.add_argument("--trade-cost", type=float, default=0.0)
 	args = parser.parse_args()
 
-	from stable_baselines3 import PPO
+	import contextlib
+	import io
+
+	with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+		from stable_baselines3 import PPO
 
 	model_root = Path(__file__).resolve().parents[1]
 	csv_path = model_root / "data" / f"df_{args.contract.lower()}.csv"
@@ -35,8 +42,11 @@ def main() -> None:
 		obs_config=obs_cfg,
 		env_config=EnvConfig(
 			holding_penalty_per_step=float(args.holding_penalty),
+			holding_penalty_start_step=int(args.holding_penalty_start_step),
 			flat_penalty_per_step=float(args.flat_penalty),
+			flat_penalty_start_step=int(args.flat_penalty_start_step),
 			hold_action_penalty=float(args.hold_action_penalty),
+			hold_action_penalty_start_step=int(args.hold_action_penalty_start_step),
 			trade_cost=float(args.trade_cost),
 		),
 	)

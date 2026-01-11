@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -16,6 +16,7 @@ except Exception as exc:  # pragma: no cover
 from .environment import EnvConfig, TradingHourEnv
 from .sample_builder import WeekSample
 from .types import Action
+from .ict_features import ICTFeatureConfig, ICT_FEATURE_DIM, compute_ict_features
 
 
 @dataclass
@@ -33,6 +34,15 @@ class ObservationConfig:
 
 	# Optional normalization: subtract current close from close sequences.
 	normalize_by_current_close: bool = True
+
+	# Optional: add a compact set of price-action / ICT-inspired features
+	use_ict_features: bool = False
+	ict_config: ICTFeatureConfig = field(default_factory=ICTFeatureConfig)
+
+	def __post_init__(self) -> None:
+		# Allow loading from JSON metadata where ict_config is a dict.
+		if isinstance(self.ict_config, dict):
+			self.ict_config = ICTFeatureConfig(**self.ict_config)
 
 
 def _tail_1d(values: np.ndarray, n: int) -> np.ndarray:
@@ -64,6 +74,7 @@ class TradingHourGymEnv(gym.Env):
 		*,
 		samples: List[WeekSample],
 		forecast_mode: str = "literal",  # "literal" for now
+		action_scheme: str = "legacy3",  # "legacy3" or "toggle2"
 		env_config: Optional[EnvConfig] = None,
 		obs_config: Optional[ObservationConfig] = None,
 		seed: int = 42,
@@ -74,13 +85,16 @@ class TradingHourGymEnv(gym.Env):
 
 		self.samples = samples
 		self.forecast_mode = str(forecast_mode)
+		self.action_scheme = str(action_scheme)
 		self.env_config = env_config or EnvConfig()
 		self.obs_config = obs_config or ObservationConfig()
 		self._rng = np.random.default_rng(seed)
 
 		self._env: Optional[TradingHourEnv] = None
 
-		self.action_space = spaces.Discrete(3)
+		if self.action_scheme not in {"legacy3", "toggle2"}:
+			raise ValueError(f"Unknown action_scheme: {self.action_scheme}")
+		self.action_space = spaces.Discrete(3 if self.action_scheme == "legacy3" else 2)
 		obs_dim = self._obs_dim()
 		self.observation_space = spaces.Box(
 			low=-np.inf,
@@ -101,13 +115,50 @@ class TradingHourGymEnv(gym.Env):
 			dim += 1
 		dim += int(self.obs_config.last_closes)
 		dim += int(self.obs_config.forecast_closes)
+		if self.obs_config.use_ict_features:
+			dim += int(ICT_FEATURE_DIM)
 		return dim
 
 	def _make_forecast_hour(self, sample: WeekSample) -> np.ndarray:
-		# For now: use the literal actual hour as the forecast.
 		if self.forecast_mode == "literal":
 			return sample.actual_hour
+		if self.forecast_mode == "provided":
+			if sample.forecast_hour is None:
+				raise ValueError("forecast_mode='provided' requires sample.forecast_hour")
+			fh = np.asarray(sample.forecast_hour, dtype=np.float32)
+			if fh.shape != sample.actual_hour.shape:
+				raise ValueError(f"forecast_hour must match actual_hour shape {sample.actual_hour.shape}, got {fh.shape}")
+			return fh
 		raise ValueError(f"Unknown forecast_mode: {self.forecast_mode}")
+
+	def _map_discrete_action(self, action: int) -> Action:
+		"""Map the policy's discrete action to a legal environment Action.
+
+		- legacy3: {0:HOLD, 1:BUY, 2:SELL} (may be invalid depending on position)
+		- toggle2: {0:HOLD, 1:TRADE} where TRADE becomes BUY if flat else SELL
+		"""
+		a = int(action)
+		if self.action_scheme == "legacy3":
+			if self._env is None:
+				return Action(a)
+			pos = int(getattr(self._env, "_position", 0))
+			# Map impossible requests to HOLD so the policy isn't implicitly rewarded/penalized
+			# for actions the simulator would never execute.
+			if a == int(Action.BUY) and pos != 0:
+				return Action.HOLD
+			if a == int(Action.SELL) and pos == 0:
+				return Action.HOLD
+			return Action(a)
+		# toggle2
+		if a == 0:
+			return Action.HOLD
+		if a != 1:
+			raise ValueError(f"toggle2 action must be 0 or 1, got {a}")
+		if self._env is None:
+			# Should never happen (step called before reset)
+			return Action.HOLD
+		pos = int(getattr(self._env, "_position", 0))
+		return Action.BUY if pos == 0 else Action.SELL
 
 	def _obs_to_vec(self, obs: Dict[str, Any]) -> np.ndarray:
 		cfg = self.obs_config
@@ -126,7 +177,9 @@ class TradingHourGymEnv(gym.Env):
 			pieces.append(np.asarray([entry_val - current_close], dtype=np.float32))
 		if cfg.use_time_fraction:
 			t = float(obs.get("t", 0))
-			pieces.append(np.asarray([t / 59.0], dtype=np.float32))
+			h = float(obs.get("horizon", 60))
+			den = max(1.0, h - 1.0)
+			pieces.append(np.asarray([t / den], dtype=np.float32))
 
 		# Last-N closes from history (use the env-provided window).
 		hw = obs.get("history_windows", {})
@@ -146,6 +199,13 @@ class TradingHourGymEnv(gym.Env):
 
 		pieces.append(closes_tail.astype(np.float32, copy=False))
 		pieces.append(forecast_tail.astype(np.float32, copy=False))
+
+		if cfg.use_ict_features:
+			# Use a longer 1m context so 1h/4h aggregates are meaningful.
+			ctx24 = np.asarray(hw.get("last_24h", np.zeros((0, 5), dtype=np.float32)), dtype=np.float32)
+			hsf = np.asarray(obs.get("hour_so_far", np.zeros((0, 5), dtype=np.float32)), dtype=np.float32)
+			ict = compute_ict_features(context_1m=ctx24, current_bar_1m=bar, hour_so_far_1m=hsf, cfg=cfg.ict_config)
+			pieces.append(ict.astype(np.float32, copy=False))
 
 		vec = np.concatenate(pieces, axis=0).astype(np.float32, copy=False)
 		if vec.shape != (self._obs_dim(),):
@@ -170,9 +230,12 @@ class TradingHourGymEnv(gym.Env):
 	def step(self, action: int):
 		if self._env is None:
 			raise RuntimeError("Env not initialized; call reset()")
-		step = self._env.step(Action(int(action)))
+		policy_action = int(action)
+		mapped = self._map_discrete_action(policy_action)
+		step = self._env.step(mapped)
 		terminated = bool(step.done)
 		truncated = False
 		obs_vec = np.zeros((self._obs_dim(),), dtype=np.float32) if terminated else self._obs_to_vec(step.observation)
 		info = dict(step.info)
+		info["policy_action"] = policy_action
 		return obs_vec, float(step.reward), terminated, truncated, info

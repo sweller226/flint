@@ -31,7 +31,13 @@ class StepResult:
 
 @dataclass(frozen=True)
 class EpisodeResult:
+	# Back-compat: net realized PnL (includes trade_cost, excludes shaping penalties)
 	pnl: float
+	# New metrics
+	pnl_gross: float
+	shaped_return: float
+	roi_net: float
+	roi_gross: float
 	trades: List[Trade]
 	rewards: np.ndarray
 	final_position: int

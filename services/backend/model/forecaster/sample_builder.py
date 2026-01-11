@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -23,6 +23,8 @@ import pandas as pd
 
 DF_COLUMNS = ["ts_event", "open", "high", "low", "close", "volume", "contract_month"]
 FEATURE_COLS_DEFAULT = ["open", "high", "low", "close", "volume"]
+# Back-compat alias (some other modules expect FEATURE_COLS)
+FEATURE_COLS = FEATURE_COLS_DEFAULT
 
 
 @dataclass(frozen=True)
@@ -109,6 +111,64 @@ def compute_median_trading_minutes_per_day(df: pd.DataFrame) -> int:
     if m <= 0:
         raise ValueError("Median daily count is <= 0")
     return m
+
+
+def build_day_segments(
+    df: pd.DataFrame,
+    *,
+    day_len: int,
+    min_day_len_ratio: float = 0.9,
+    feature_cols: Sequence[str] = FEATURE_COLS_DEFAULT,
+) -> Tuple[np.ndarray, List[Tuple[int, int]], List[pd.Timestamp]]:
+    """Build fixed-length day segments aligned to the end of each trading day.
+
+    Returns:
+      - data: (N, F) float32 array for `feature_cols`
+      - day_segments: list of (start_idx, end_idx) into `data` (end-exclusive)
+      - day_starts: list of timestamps (first timestamp in each day group)
+    """
+
+    if day_len <= 60:
+        raise ValueError("day_len must be > 60 to hold a 1-hour target")
+
+    df = df.sort_values("ts_event").reset_index(drop=True)
+    data = df[list(feature_cols)].to_numpy(dtype=np.float32, copy=True)
+
+    groups = df.groupby(df["ts_event"].dt.date, sort=True)
+    day_segments: List[Tuple[int, int]] = []
+    day_starts: List[pd.Timestamp] = []
+    min_len = int(day_len * float(min_day_len_ratio))
+
+    for _, g in groups:
+        if len(g) < min_len:
+            continue
+        day_start_idx = int(g.index.min())
+        day_end_idx = int(g.index.max()) + 1
+        if (day_end_idx - day_start_idx) < day_len:
+            continue
+        seg_end = day_end_idx
+        seg_start = seg_end - day_len
+        day_segments.append((seg_start, seg_end))
+        day_starts.append(pd.Timestamp(g["ts_event"].iloc[0]))
+
+    if not day_segments:
+        raise ValueError("No valid day segments were created; check day_len/min_day_len_ratio")
+
+    return data, day_segments, day_starts
+
+
+def build_disjoint_week_starts(n_days: int, *, days_per_sample: int) -> List[int]:
+    """Return disjoint week starts (non-overlapping windows)."""
+    if days_per_sample <= 0:
+        raise ValueError("days_per_sample must be > 0")
+    if n_days <= 0:
+        return []
+    starts: List[int] = []
+    i = 0
+    while i + days_per_sample <= n_days:
+        starts.append(i)
+        i += days_per_sample
+    return starts
 
 
 def find_start_index(

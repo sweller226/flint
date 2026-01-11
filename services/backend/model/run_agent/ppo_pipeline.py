@@ -11,6 +11,7 @@ import numpy as np
 from ..trade_env.environment import EnvConfig
 from ..trade_env.gym_env import ObservationConfig, TradingHourGymEnv
 from ..trade_env.sample_builder import WeekSample, build_week_samples
+from ..trade_env.ict_features import ICT_FEATURE_DIM
 
 
 @dataclass(frozen=True)
@@ -101,8 +102,12 @@ def _load_samples(data_dir: Path, contracts: Sequence[str], max_samples_per_cont
 def train_ppo_multi(config: PPOTrainConfig, *, data_dir: Optional[Path] = None) -> Dict[str, Any]:
 	"""Train PPO across mixed contract samples."""
 	try:
-		from stable_baselines3 import PPO
-		from stable_baselines3.common.vec_env import DummyVecEnv
+		import contextlib
+		import io
+
+		with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+			from stable_baselines3 import PPO
+			from stable_baselines3.common.vec_env import DummyVecEnv
 	except Exception as exc:  # pragma: no cover
 		raise RuntimeError(
 			"stable-baselines3 is required. Install with `pip install stable-baselines3 gymnasium`."
@@ -175,7 +180,11 @@ def evaluate_ppo_multi(
 ) -> Dict[str, Any]:
 	"""Evaluate a PPO model; returns metrics and writes artifacts."""
 	try:
-		from stable_baselines3 import PPO
+		import contextlib
+		import io
+
+		with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+			from stable_baselines3 import PPO
 	except Exception as exc:  # pragma: no cover
 		raise RuntimeError(
 			"stable-baselines3 is required. Install with `pip install stable-baselines3 gymnasium`."
@@ -212,10 +221,18 @@ def evaluate_ppo_multi(
 		return dim
 
 	def _total_obs_dim(obs_cfg: ObservationConfig) -> int:
-		return int(_base_obs_dim(obs_cfg) + int(obs_cfg.last_closes) + int(obs_cfg.forecast_closes))
+		dim = int(_base_obs_dim(obs_cfg) + int(obs_cfg.last_closes) + int(obs_cfg.forecast_closes))
+		if bool(getattr(obs_cfg, "use_ict_features", False)):
+			dim += int(ICT_FEATURE_DIM)
+		return int(dim)
 
 	def _coerce_obs_config(obs_cfg: ObservationConfig, target_dim: int) -> ObservationConfig:
-		base = _base_obs_dim(obs_cfg)
+		use_ict = bool(getattr(obs_cfg, "use_ict_features", False))
+		base = int(_base_obs_dim(obs_cfg) + (int(ICT_FEATURE_DIM) if use_ict else 0))
+		# If the config thinks ICT is enabled but the model dimension can't support it, disable it.
+		if use_ict and int(target_dim) < int(base):
+			use_ict = False
+			base = int(_base_obs_dim(obs_cfg))
 		remaining = int(target_dim) - int(base)
 		if remaining < 0:
 			raise RuntimeError(f"Model obs dim {target_dim} is smaller than base features {base}")
@@ -232,6 +249,7 @@ def evaluate_ppo_multi(
 			last_closes=int(last),
 			forecast_closes=int(forecast),
 			normalize_by_current_close=bool(obs_cfg.normalize_by_current_close),
+			use_ict_features=bool(use_ict),
 		)
 
 	expected_dim = _expected_obs_dim()
@@ -247,13 +265,16 @@ def evaluate_ppo_multi(
 	)
 
 	total_rewards: List[float] = []
-	realized_pnls: List[float] = []
+	realized_pnls_net: List[float] = []
+	realized_pnls_gross: List[float] = []
+	rois_net: List[float] = []
+	rois_gross: List[float] = []
 	invalid_counts: List[int] = []
 	executed_trade_counts: List[int] = []
 	executed_buy_counts: List[int] = []
 	executed_sell_counts: List[int] = []
 	forced_liquidations: List[int] = []
-	action_counts = np.zeros((3,), dtype=np.int64)
+	action_counts = np.zeros((int(env.action_space.n),), dtype=np.int64)
 
 	per_episode: List[Dict[str, Any]] = []
 
@@ -261,7 +282,10 @@ def evaluate_ppo_multi(
 		obs, _info = env.reset()
 		done = False
 		total_reward = 0.0
-		realized_pnl = 0.0
+		realized_pnl_net = 0.0
+		realized_pnl_gross = 0.0
+		roi_net = 0.0
+		roi_gross = 0.0
 		invalid = 0
 		exec_trades = 0
 		exec_buys = 0
@@ -271,7 +295,8 @@ def evaluate_ppo_multi(
 		while not done:
 			action, _state = model.predict(obs, deterministic=bool(config.deterministic))
 			a = int(action)
-			action_counts[a] += 1
+			if 0 <= a < len(action_counts):
+				action_counts[a] += 1
 			obs, reward, terminated, truncated, info = env.step(a)
 			total_reward += float(reward)
 			steps += 1
@@ -279,25 +304,33 @@ def evaluate_ppo_multi(
 				invalid += 1
 			if bool(info.get("executed_trade")):
 				exec_trades += 1
-				if a == 1:
+				act = int(info.get("action", -1))
+				if act == 1:
 					exec_buys += 1
-				elif a == 2:
+				elif act == 2:
 					exec_sells += 1
 			elif a != 0 and not bool(info.get("invalid_action")):
 				# Back-compat heuristic (should rarely be hit).
 				exec_trades += 1
-				if a == 1:
+				act = int(info.get("action", -1))
+				if act == 1:
 					exec_buys += 1
-				elif a == 2:
+				elif act == 2:
 					exec_sells += 1
 			if bool(info.get("forced_liquidation")):
 				forced += 1
 			done = bool(terminated or truncated)
 			if done:
-				realized_pnl = float(info.get("pnl", realized_pnl))
+				realized_pnl_net = float(info.get("pnl_net", info.get("pnl", realized_pnl_net)))
+				realized_pnl_gross = float(info.get("pnl_gross", realized_pnl_gross))
+				roi_net = float(info.get("roi_net", roi_net))
+				roi_gross = float(info.get("roi_gross", roi_gross))
 
 		total_rewards.append(total_reward)
-		realized_pnls.append(realized_pnl)
+		realized_pnls_net.append(realized_pnl_net)
+		realized_pnls_gross.append(realized_pnl_gross)
+		rois_net.append(roi_net)
+		rois_gross.append(roi_gross)
 		invalid_counts.append(invalid)
 		executed_trade_counts.append(exec_trades)
 		executed_buy_counts.append(exec_buys)
@@ -307,7 +340,10 @@ def evaluate_ppo_multi(
 			{
 				"episode": ep,
 				"total_reward": total_reward,
-				"realized_pnl": realized_pnl,
+				"realized_pnl_net": realized_pnl_net,
+				"realized_pnl_gross": realized_pnl_gross,
+				"roi_net": roi_net,
+				"roi_gross": roi_gross,
 				"steps": steps,
 				"invalid_actions": invalid,
 				"executed_trades": exec_trades,
@@ -318,12 +354,21 @@ def evaluate_ppo_multi(
 		)
 
 	total_rewards_arr = np.asarray(total_rewards, dtype=np.float32)
-	realized_pnls_arr = np.asarray(realized_pnls, dtype=np.float32)
+	realized_pnls_net_arr = np.asarray(realized_pnls_net, dtype=np.float32)
+	realized_pnls_gross_arr = np.asarray(realized_pnls_gross, dtype=np.float32)
+	rois_net_arr = np.asarray(rois_net, dtype=np.float32)
+	rois_gross_arr = np.asarray(rois_gross, dtype=np.float32)
 	invalid_arr = np.asarray(invalid_counts, dtype=np.int32)
 	trades_arr = np.asarray(executed_trade_counts, dtype=np.int32)
 	buys_arr = np.asarray(executed_buy_counts, dtype=np.int32)
 	sells_arr = np.asarray(executed_sell_counts, dtype=np.int32)
 	forced_arr = np.asarray(forced_liquidations, dtype=np.int32)
+
+	# Map policy action indices to labels.
+	if int(env.action_space.n) == 2:
+		action_labels = ["HOLD", "TRADE"]
+	else:
+		action_labels = ["HOLD", "BUY", "SELL"]
 
 	metrics: Dict[str, Any] = {
 		"model_path": str(model_path),
@@ -339,25 +384,27 @@ def evaluate_ppo_multi(
 		"total_reward_min": float(total_rewards_arr.min()),
 		"total_reward_max": float(total_rewards_arr.max()),
 		"total_reward_win_rate": float((total_rewards_arr > 0).mean()),
-		"realized_pnl_mean": float(realized_pnls_arr.mean()),
-		"realized_pnl_std": float(realized_pnls_arr.std()),
-		"realized_pnl_min": float(realized_pnls_arr.min()),
-		"realized_pnl_max": float(realized_pnls_arr.max()),
-		"realized_pnl_win_rate": float((realized_pnls_arr > 0).mean()),
+		"realized_pnl_net_mean": float(realized_pnls_net_arr.mean()),
+		"realized_pnl_net_std": float(realized_pnls_net_arr.std()),
+		"realized_pnl_net_min": float(realized_pnls_net_arr.min()),
+		"realized_pnl_net_max": float(realized_pnls_net_arr.max()),
+		"realized_pnl_net_win_rate": float((realized_pnls_net_arr > 0).mean()),
+		"realized_pnl_gross_mean": float(realized_pnls_gross_arr.mean()),
+		"realized_pnl_gross_std": float(realized_pnls_gross_arr.std()),
+		"realized_pnl_gross_min": float(realized_pnls_gross_arr.min()),
+		"realized_pnl_gross_max": float(realized_pnls_gross_arr.max()),
+		"roi_net_mean": float(rois_net_arr.mean()),
+		"roi_net_std": float(rois_net_arr.std()),
+		"roi_gross_mean": float(rois_gross_arr.mean()),
+		"roi_gross_std": float(rois_gross_arr.std()),
 		"invalid_mean": float(invalid_arr.mean()),
 		"executed_trades_mean": float(trades_arr.mean()),
 		"executed_buys_mean": float(buys_arr.mean()),
 		"executed_sells_mean": float(sells_arr.mean()),
 		"forced_liquidations_mean": float(forced_arr.mean()),
-		"action_counts": {
-			"HOLD": int(action_counts[0]),
-			"BUY": int(action_counts[1]),
-			"SELL": int(action_counts[2]),
-		},
-		"actions_per_episode": {
-			"HOLD": float(action_counts[0] / max(1, int(config.episodes))),
-			"BUY": float(action_counts[1] / max(1, int(config.episodes))),
-			"SELL": float(action_counts[2] / max(1, int(config.episodes))),
+		"policy_action_counts": {k: int(action_counts[i]) for i, k in enumerate(action_labels)},
+		"policy_actions_per_episode": {
+			k: float(action_counts[i] / max(1, int(config.episodes))) for i, k in enumerate(action_labels)
 		},
 	}
 
@@ -366,11 +413,11 @@ def evaluate_ppo_multi(
 
 	csv_path = artifacts_dir / f"{model_path.stem}.episodes.csv"
 	lines = [
-		"episode,total_reward,realized_pnl,steps,invalid_actions,executed_trades,executed_buys,executed_sells,forced_liquidations"
+		"episode,total_reward,realized_pnl_net,realized_pnl_gross,roi_net,roi_gross,steps,invalid_actions,executed_trades,executed_buys,executed_sells,forced_liquidations"
 	]
 	for row in per_episode:
 		lines.append(
-			f"{row['episode']},{row['total_reward']:.6f},{row['realized_pnl']:.6f},{row['steps']},{row['invalid_actions']},{row['executed_trades']},{row['executed_buys']},{row['executed_sells']},{row['forced_liquidations']}"
+			f"{row['episode']},{row['total_reward']:.6f},{row['realized_pnl_net']:.6f},{row['realized_pnl_gross']:.6f},{row['roi_net']:.6f},{row['roi_gross']:.6f},{row['steps']},{row['invalid_actions']},{row['executed_trades']},{row['executed_buys']},{row['executed_sells']},{row['forced_liquidations']}"
 		)
 	csv_path.write_text("\n".join(lines) + "\n")
 
