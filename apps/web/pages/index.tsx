@@ -206,8 +206,9 @@ export default function Home() {
 
                     {/* Right Side: Download Button */}
                     <div className="hidden md:flex items-center">
-                        <button
-                            onClick={scrollToBottom}
+                        <a
+                            href="/FlintSetup.exe"
+                            download
                             className="
                                 relative group overflow-hidden 
                                 px-7 py-3 rounded-lg 
@@ -226,7 +227,7 @@ export default function Home() {
                             <span className="relative z-10 text-sm font-[900] uppercase tracking-[0.2em] whitespace-nowrap">
                                 Download
                             </span>
-                        </button>
+                        </a>
                     </div>
                 </div>
             </nav>
@@ -254,12 +255,13 @@ export default function Home() {
 
                     {/* Symmetric Buttons */}
                     <div className="hero-animate flex flex-col sm:flex-row justify-center gap-6 mb-24">
-                        <button
-                            onClick={scrollToBottom}
+                        <a
+                            href="/FlintSetup.exe"
+                            download
                             className="h-16 w-80 flex items-center justify-center rounded-2xl text-base font-[900] uppercase tracking-widest text-bgDark bg-primary hover:scale-105 transition-all group overflow-hidden relative shadow-2xl"
                         >
                             <span className="relative z-10">Download for Windows</span>
-                        </button>
+                        </a>
 
                         {/* ATTACHED HANDLER HERE */}
                         <button
@@ -447,14 +449,18 @@ export default function Home() {
                             Ready to trade with <span className="text-primary italic pr-1">Flint</span>?
                         </h2>
 
-                        <button className="relative inline-flex items-center gap-6 px-12 py-6 bg-white text-bgDark font-black text-xl rounded-2xl hover:-translate-y-2 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)]">
+                        <a
+                            href="/FlintSetup.exe"
+                            download
+                            className="relative inline-flex items-center gap-6 px-12 py-6 bg-white text-bgDark font-black text-xl rounded-2xl hover:-translate-y-2 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)]"
+                        >
                             DOWNLOAD FOR WINDOWS
                             <div className="w-8 h-8 rounded-full bg-bgDark text-white flex items-center justify-center">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                                 </svg>
                             </div>
-                        </button>
+                        </a>
                     </div>
                 </div>
             </section>

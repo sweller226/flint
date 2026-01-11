@@ -1,0 +1,16 @@
+appId: com.flint.desktop
+productName: Flint
+directories:
+  output: dist
+files:
+  - "**/*"
+  - "!**/*.ts"
+  - "!*.map"
+  - "!package-lock.json"
+  - "!build.log"
+  - "!src/*"
+  - dist-electron/**/*
+  - out/**/*
+win:
+  target: nsis
+  icon: resources/icon.png

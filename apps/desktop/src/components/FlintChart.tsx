@@ -31,6 +31,7 @@ type FlintChartProps = {
     onContextMenu?: (event: { x: number; y: number; price: number; time: number }) => void;
     markers?: any[];
     annotations?: Annotation[];
+    onVisibleLogicalRangeChange?: (range: { from: number; to: number }) => void;
 };
 
 export const FlintChart = forwardRef<FlintChartHandle, FlintChartProps>(({
@@ -39,6 +40,7 @@ export const FlintChart = forwardRef<FlintChartHandle, FlintChartProps>(({
     onContextMenu,
     markers = [],
     annotations = [],
+    onVisibleLogicalRangeChange,
 }, ref) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<IChartApi | null>(null);
@@ -78,6 +80,15 @@ export const FlintChart = forwardRef<FlintChartHandle, FlintChartProps>(({
                 borderColor: "#111827",
             }
         });
+
+        // Handler for infinite scroll / chunking
+        if (onVisibleLogicalRangeChange) {
+            chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+                if (range) {
+                    onVisibleLogicalRangeChange({ from: range.from, to: range.to });
+                }
+            });
+        }
 
         const series = chart.addCandlestickSeries({
             upColor: "#22C55E",

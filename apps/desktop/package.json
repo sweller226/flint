@@ -1,6 +1,11 @@
 {
     "name": "@flint/desktop",
     "version": "0.1.0",
+    "description": "Flint Desktop Application",
+    "author": {
+        "name": "User",
+        "email": "user@example.com"
+    },
     "main": "dist-electron/main.js",
     "scripts": {
         "dev": "next dev -p 3001",

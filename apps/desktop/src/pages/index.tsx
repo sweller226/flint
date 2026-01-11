@@ -2,10 +2,13 @@ import React from "react";
 import { TopBar } from "../components/TopBar";
 import { ChartPanel } from "../components/ChartPanel";
 import { RightRail } from "../components/RightRail";
+import { Sidebar } from "../components/Sidebar";
+import { BottomStrip } from "../components/BottomStrip";
 
 export default function Home() {
     return (
         <div className="h-screen w-screen bg-black text-flint-text-primary flex overflow-hidden font-sans select-none">
+            <Sidebar />
             <div className="flex-1 flex flex-col min-w-0">
                 <TopBar />
 
@@ -18,6 +21,7 @@ export default function Home() {
                         <RightRail />
                     </aside>
                 </main>
+                <BottomStrip />
             </div>
         </div>
     );
