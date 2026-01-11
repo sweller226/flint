@@ -18,19 +18,22 @@ export const Sidebar = () => (
 
         {/* Nav */}
         <nav className="flex-1 flex flex-col gap-4">
-            {items.map((item, idx) => (
-                <button
-                    key={item.id}
-                    className={`h-11 w-11 rounded-2xl flex items-center justify-center text-xl transition-all duration-300 group relative
-              ${idx === 0
-                            ? "bg-flint-primary/10 text-flint-primary"
-                            : "text-flint-text-secondary hover:text-flint-text-primary hover:bg-flint-panel"}`}
-                    title={item.label}
-                >
-                    <item.icon />
-                    {idx === 0 && <div className="absolute left-0 w-1 h-1/2 bg-flint-primary rounded-r-full" />}
-                </button>
-            ))}
+            {items.map((item, idx) => {
+                const Icon = item.icon; // Extract the component
+                return (
+                    <button
+                        key={item.id}
+                        className={`h-11 w-11 rounded-2xl flex items-center justify-center text-xl transition-all duration-300 group relative
+                  ${idx === 0
+                                ? "bg-flint-primary/10 text-flint-primary"
+                                : "text-flint-text-secondary hover:text-flint-text-primary hover:bg-flint-panel"}`}
+                        title={item.label}
+                    >
+                        <Icon /> {/* Render as component */}
+                        {idx === 0 && <div className="absolute left-0 w-1 h-1/2 bg-flint-primary rounded-r-full" />}
+                    </button>
+                );
+            })}
         </nav>
     </aside>
 );

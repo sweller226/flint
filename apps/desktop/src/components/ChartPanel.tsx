@@ -3,12 +3,22 @@ import { FlintChart, Candle } from "./FlintChart";
 // import { TerminalChartMock } from "./TerminalChartMock";
 import axios from "axios";
 
-const TICKERS = ["ES", "BTC"];
-const TIMEFRAMES = ["1m", "5m", "15m"];
+const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1D", "1W", "1M"];
+
+// ES Futures contract quarters
+const ES_CONTRACTS = [
+    { code: "H", label: "Q1 (Mar)" },
+    { code: "M", label: "Q2 (Jun)" },
+    { code: "U", label: "Q3 (Sep)" },
+    { code: "Z", label: "Q4 (Dec)" },
+];
+
+// Helper to format timestamp for slider display (Removed)
 
 export const ChartPanel = () => {
-    const [symbol, setSymbol] = useState("ES");
     const [timeframe, setTimeframe] = useState("1m");
+    const [contract, setContract] = useState("H"); // Default to Q1 (March)
+
     const [candles, setCandles] = useState<Candle[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -22,8 +32,15 @@ export const ChartPanel = () => {
             setLoading(true);
             setError(null);
             try {
-                // Fetch data from new backend
-                const res = await axios.get(`http://localhost:8000/api/candles?limit=1000`, { timeout: 30000 });
+                // Determine width in seconds
+                const tfMap: Record<string, number> = {
+                    "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
+                    "1h": 3600, "4h": 14400, "1D": 86400, "1W": 604800, "1M": 2592000
+                };
+                const width = tfMap[timeframe] || 60;
+
+                // Fetch data from new backend with contract, width, and date range
+                const res = await axios.get(`http://localhost:8000/api/candles?contract=${contract}&limit=10000&width_seconds=${width}`, { timeout: 30000 });
 
                 if (res.data && res.data.candles) {
                     const mapped = res.data.candles.map((c: any) => ({
@@ -45,24 +62,18 @@ export const ChartPanel = () => {
             }
         };
         fetchHistory();
-    }, [symbol, timeframe]);
+    }, [timeframe, contract]);
 
     return (
         <div className="h-full flex flex-col bg-flint-panel relative overflow-hidden rounded-xl border border-flint-border shadow-lg">
             {/* Header */}
             <div className="h-12 border-b border-flint-border flex items-center justify-between px-4 bg-flint-panel z-10">
                 <div className="flex gap-4 items-center">
+                    {/* Ticker Selector Placeholder - currently fixed to ES */}
                     <div className="flex items-center bg-flint-subpanel rounded-lg p-1 border border-flint-border">
-                        {TICKERS.map(s => (
-                            <button
-                                key={s}
-                                onClick={() => setSymbol(s)}
-                                className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${symbol === s ? "bg-flint-blue text-white shadow-sm" : "text-flint-text-muted hover:text-white hover:bg-white/5"}`}
-                            >
-                                {s}
-                            </button>
-                        ))}
+                        <span className="px-3 py-1 rounded-md text-[11px] font-bold bg-flint-blue text-white shadow-sm">ES</span>
                     </div>
+
                     <div className="flex items-center gap-1">
                         {TIMEFRAMES.map(t => (
                             <button
@@ -71,6 +82,19 @@ export const ChartPanel = () => {
                                 className={`px-2 py-1 rounded text-[11px] font-medium transition-all ${timeframe === t ? "text-flint-blue bg-flint-blue/10" : "text-flint-text-muted hover:text-white"}`}
                             >
                                 {t}
+                            </button>
+                        ))}
+                    </div>
+                    {/* Contract Selector - Always show now since we removed symbol selector */}
+                    <div className="flex items-center bg-flint-subpanel rounded-lg p-1 border border-flint-border">
+                        {ES_CONTRACTS.map(c => (
+                            <button
+                                key={c.code}
+                                onClick={() => setContract(c.code)}
+                                className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${contract === c.code ? "bg-flint-green text-white shadow-sm" : "text-flint-text-muted hover:text-white hover:bg-white/5"}`}
+                                title={c.label}
+                            >
+                                {c.code}
                             </button>
                         ))}
                     </div>

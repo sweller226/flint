@@ -49,3 +49,7 @@ release/
 # Project Specific
 trades.jsonl
 *.sqlite3
+
+# Data
+real_data.csv
+services/api/real_data.csv
