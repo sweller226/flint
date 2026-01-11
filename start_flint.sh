@@ -41,7 +41,7 @@ npm run electron &
 
 echo ""
 echo "==================================================="
-echo "       All Systems Launched! 🚀"
+echo "       All Systems Launched!"
 echo "==================================================="
 echo "Backend API: http://localhost:8000/docs"
 echo "Web App:     http://localhost:3000"

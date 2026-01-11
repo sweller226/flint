@@ -25,7 +25,7 @@ const createMainWindow = () => {
 
     mainWindow.loadURL(appURL);
 
-    mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    mainWindow.webContents.on('did-fail-load', (_, errorCode, errorDescription) => {
         console.error('FAILED TO LOAD:', errorCode, errorDescription);
     });
 

@@ -9,8 +9,15 @@
 }
 
 body {
-    color: rgb(var(--foreground-rgb));
-    background: linear-gradient(to bottom,
-            transparent,
-            rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+    @apply bg-flint-bg text-flint-text-primary font-sans selection:bg-flint-primary/30 selection:text-white;
+}
+
+/* Hide scrollbars but allow scrolling */
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
