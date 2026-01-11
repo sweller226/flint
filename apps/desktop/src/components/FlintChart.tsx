@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import {
     createChart,
     ColorType,
@@ -20,6 +20,11 @@ export type Annotation = {
     color?: string;
 };
 
+export type FlintChartHandle = {
+    update: (candle: Candle) => void;
+    setData: (candles: Candle[]) => void;
+};
+
 type FlintChartProps = {
     candles: Candle[];
     theme?: "dark" | "light";
@@ -28,16 +33,29 @@ type FlintChartProps = {
     annotations?: Annotation[];
 };
 
-export const FlintChart: React.FC<FlintChartProps> = ({
+export const FlintChart = forwardRef<FlintChartHandle, FlintChartProps>(({
     candles,
     theme = "dark",
     onContextMenu,
     markers = [],
     annotations = [],
-}) => {
+}, ref) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+
+    useImperativeHandle(ref, () => ({
+        update: (candle: Candle) => {
+            if (seriesRef.current) {
+                seriesRef.current.update(candle);
+            }
+        },
+        setData: (data: Candle[]) => {
+            if (seriesRef.current) {
+                seriesRef.current.setData(data);
+            }
+        }
+    }));
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -70,7 +88,6 @@ export const FlintChart: React.FC<FlintChartProps> = ({
         });
 
         series.setData(candles);
-        chart.timeScale().fitContent();
 
         chartRef.current = chart;
         seriesRef.current = series;
@@ -110,13 +127,26 @@ export const FlintChart: React.FC<FlintChartProps> = ({
         };
     }, []);
 
+    // Prop update listener - debounced to prevent rapid updates
     useEffect(() => {
-        if (!seriesRef.current) return;
-        seriesRef.current.setData(candles);
+        if (!seriesRef.current || !chartRef.current) return;
+        if (candles.length === 0) return;
+
+        // Use a timeout to prevent multiple rapid updates
+        const timer = setTimeout(() => {
+            console.log("[FlintChart] candles prop changed:", candles.length, "- Resetting data and view");
+            seriesRef.current?.setData(candles);
+        }, 10);
+
+        return () => clearTimeout(timer);
+    }, [candles]);
+
+    useEffect(() => {
+        if (!seriesRef.current || !chartRef.current) return;
         if (markers.length > 0) {
             seriesRef.current.setMarkers(markers);
         }
-    }, [candles, markers]);
+    }, [markers]);
 
     // Handle Annotations (Drawing Tools)
     useEffect(() => {
@@ -150,7 +180,9 @@ export const FlintChart: React.FC<FlintChartProps> = ({
         return () => {
             lines.forEach(l => chartRef.current?.removeSeries(l));
         };
-    }, [annotations, candles]);
+    }, [annotations, candles]); // Annotations depend on candles for 'horizontal lines' across range
 
     return <div ref={containerRef} className="w-full h-full relative" />;
-};
+});
+
+FlintChart.displayName = "FlintChart";

@@ -73,52 +73,6 @@ export const RightRail = () => {
                     ))}
                 </div>
             </div>
-
-            {/* Strategy Lab */}
-            <div className="h-[340px] rounded-2xl bg-flint-panel border border-flint-border p-4 flex flex-col shadow-2xl shadow-black/50">
-                <h3 className="text-[10px] font-black text-flint-text-secondary mb-4 uppercase tracking-[0.2em]">Strategy Lab</h3>
-
-                <div className="flex-1 overflow-auto mb-4 space-y-4 -mx-2 px-2 scrollbar-none">
-                    {messages.length === 0 && (
-                        <div className="bg-flint-primary/5 border border-flint-primary/10 rounded-xl p-4 text-flint-text-secondary text-[11px] leading-relaxed italic">
-                            “Asia session high swept. Price entering bullish FVG—look for long scalp targets.”
-                        </div>
-                    )}
-                    {messages.map((m, i) => (
-                        <div key={i} className={`p-3 rounded-2xl text-[11px] leading-relaxed border shadow-sm ${m.role === 'user'
-                                ? 'bg-flint-bg border-flint-border ml-6 text-flint-text-secondary rounded-br-none'
-                                : 'bg-flint-primary/10 border-flint-primary/20 mr-6 text-flint-text-primary rounded-bl-none'
-                            }`}>
-                            {m.text}
-                        </div>
-                    ))}
-                    {isTyping && (
-                        <div className="text-[10px] text-flint-primary font-bold animate-pulse px-2 uppercase tracking-widest">Flint is calculating...</div>
-                    )}
-                </div>
-
-                <div className="flex gap-2">
-                    <textarea
-                        className="flex-1 bg-flint-bg border border-flint-border rounded-xl px-4 py-3 text-flint-text-primary text-[11px] resize-none focus:outline-none focus:border-flint-primary/50 placeholder-flint-text-secondary/50 transition-all h-20 scrollbar-none"
-                        placeholder="Ask strategy question..."
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                sendMessage();
-                            }
-                        }}
-                    />
-                    <button
-                        onClick={sendMessage}
-                        className="self-end p-3 rounded-xl bg-flint-primary text-white shadow-lg shadow-flint-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
-                        disabled={isTyping || !inputText.trim()}
-                    >
-                        ↑
-                    </button>
-                </div>
-            </div>
         </div>
     );
 };

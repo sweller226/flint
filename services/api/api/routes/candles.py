@@ -10,17 +10,22 @@ router = APIRouter(tags=["candles"])
 async def get_candles(
     contract: str = Query("H", description="Contract quarter code: H (March), M (June), U (Sep), Z (Dec)"),
     width_seconds: Optional[int] = Query(None, ge=1, description="Candle width in seconds. If provided, resamples data."),
-    limit: int = Query(100, ge=1, le=10000),
+    limit: int = Query(100, ge=1, le=100000),
+    end_time: Optional[str] = Query(None, description="ISO timestamp to fetch candles up to. Defaults to latest."),
 ):
     """Get historical candles for a specific ES futures contract."""
     try:
         market_state = get_market_state(contract)
         
+        # Determine end timestamp
+        if end_time:
+            end_ts = parse_timestamp(end_time)
+        else:
+            end_ts = market_state.df['timestamp'].max()
+
         # Default to loading the most recent 'limit' candles
         # Unless width_seconds is set, then we need to estimate time window to fetch efficiently
-        
         start_ts = None
-        end_ts = market_state.df['timestamp'].max()
 
         if width_seconds:
              # Estimate needed history: limit * width * safety_factor
@@ -36,12 +41,8 @@ async def get_candles(
         if start_ts:
              df = market_state.load_window_by_time(start_ts, end_ts)
         else:
-             # Just get everything or use simple logic. 
-             # To keep behavior consistent (tail limit), we can just load the whole DF or huge chunk?
-             # But 'load_window_by_time' is the standard way.
-             # If no start_ts estimated, and no explicit start/end params...
-             # We should probably just load the whole DF and tail it?
-             df = market_state.df
+             # Load up to end_ts
+             df = market_state.df[market_state.df['timestamp'] <= end_ts]
 
         # Resample if requested
         if width_seconds:
@@ -58,7 +59,7 @@ async def get_candles(
             
             df = df.reset_index()
 
-        # Apply limit
+        # Apply limit (TAIL because we want the N candles ENDING at end_time)
         if len(df) > limit:
             df = df.tail(limit)
         

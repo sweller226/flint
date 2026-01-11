@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
 
-from api.routes import candles, websocket, ict, volume, contracts
+from api.routes import candles, ict, volume, contracts
 from api.dependencies import initialize_market_state
 
 
@@ -42,7 +42,6 @@ app.add_middleware(
 
 # Include routers
 app.include_router(candles.router, prefix='/api')
-app.include_router(websocket.router, prefix='/api')
 app.include_router(ict.router, prefix='/api')
 app.include_router(volume.router, prefix='/api')
 app.include_router(contracts.router, prefix='/api')
@@ -55,7 +54,6 @@ async def root():
         "version": "1.0.0",
         "endpoints": {
             "candles": "/api/candles",
-            "websocket": "/ws/candles",
             "ict_levels": "/api/ict/levels",
             "volume_profile": "/api/volume/profile",
             "docs": "/docs"
