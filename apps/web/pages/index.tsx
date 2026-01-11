@@ -301,7 +301,7 @@ export default function Home() {
             </section>
 
             <footer className="py-12 text-center text-textMuted text-xs bg-bgDark">
-                Built for the 2026 Solana AI Hackathon
+                Copyright © 2026 Flint. All rights reserved.
             </footer>
         </main>
     );
