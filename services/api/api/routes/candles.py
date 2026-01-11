@@ -10,7 +10,7 @@ router = APIRouter(tags=["candles"])
 async def get_candles(
     contract: str = Query("H", description="Contract quarter code: H (March), M (June), U (Sep), Z (Dec)"),
     width_seconds: Optional[int] = Query(None, ge=1, description="Candle width in seconds. If provided, resamples data."),
-    limit: int = Query(100, ge=1, le=1000000),
+    limit: int = Query(100, ge=1, le=100000),
     end_time: Optional[str] = Query(None, description="ISO timestamp to fetch candles up to. Defaults to latest."),
 ):
     """Get historical candles for a specific ES futures contract."""

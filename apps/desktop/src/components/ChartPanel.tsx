@@ -154,7 +154,7 @@ export const ChartPanel = () => {
                 "1h": 3600, "4h": 14400, "1D": 86400, "1W": 604800, "1M": 2592000
             };
             const width = tfMap[timeframe] || 60;
-            const limit = 10000; // Large chunk for replay
+            const limit = 100000; // Large chunk for replay
 
             let url = `http://localhost:8000/api/candles?contract=${contract}&limit=${limit}&width_seconds=${width}`;
 
@@ -303,33 +303,6 @@ export const ChartPanel = () => {
             </div>
 
             <div className="flex-1 flex overflow-hidden relative">
-                {/* Tools Rail */}
-                <div className="w-12 border-r border-flint-border flex flex-col items-center gap-2 py-3 bg-flint-subpanel z-10">
-                    {[
-                        { id: "trendline" as const, icon: "✏️", label: "Draw Trendline" },
-                        { id: "hline" as const, icon: "➖", label: "Horizontal Line" },
-                    ].map(tool => (
-                        <button
-                            key={tool.id}
-                            onClick={() => setActiveTool(tool.id)}
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTool === tool.id ? "bg-flint-blue text-white shadow-[0_0_10px_rgba(37,99,235,0.3)]" : "text-flint-text-muted hover:bg-white/5 hover:text-white"}`}
-                            title={tool.label}
-                        >
-                            <span className="text-[14px]">{tool.icon}</span>
-                        </button>
-                    ))}
-
-                    <div className="w-6 h-px bg-flint-border my-1"></div>
-
-                    <button
-                        onClick={() => { setAnnotations([]); setActiveTool("none"); }}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-flint-text-muted hover:text-flint-negative hover:bg-flint-negative/10 transition-all"
-                        title="Clear All"
-                    >
-                        <span className="text-[14px]">🗑️</span>
-                    </button>
-                </div>
-
                 {/* Chart Area */}
                 <div className="flex-1 relative bg-flint-bg group">
                     <FlintChart
@@ -400,9 +373,9 @@ export const ChartPanel = () => {
                             <div className="flex items-center gap-2 pl-2">
                                 <span className="text-[10px] font-bold text-flint-text-muted uppercase tracking-wider">Speed</span>
                                 <select
+                                    value={playbackSpeed}
                                     onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
                                     className="bg-flint-bg/50 border border-flint-border text-white text-xs rounded px-2 py-1 focus:outline-none focus:border-flint-blue cursor-pointer appearance-none hover:bg-flint-bg transition-colors text-center w-20"
-                                    defaultValue="1"
                                 >
                                     <option value="1">1x</option>
                                     <option value="5">5x</option>
