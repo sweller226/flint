@@ -1,0 +1,17 @@
+
+> @flint/web@0.1.0 lint
+> next lint
+
+
+./pages/index.tsx
+174:25  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+174:110  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+npm error Lifecycle script `lint` failed with error:
+npm error code 1
+npm error path C:\Users\33576\flint\apps\web
+npm error workspace @flint/web@0.1.0
+npm error location C:\Users\33576\flint\apps\web
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c next lint

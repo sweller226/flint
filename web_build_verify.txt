@@ -1,0 +1,30 @@
+
+> @flint/web@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Linting and checking validity of types ...
+   Creating an optimized production build ...
+ ⚠ For production Image Optimization with Next.js, the optional 'sharp' package is strongly recommended. Run 'npm i sharp', and Next.js will use it automatically for Image Optimization.
+Read more: https://nextjs.org/docs/messages/sharp-missing-in-production
+ ⚠ For production Image Optimization with Next.js, the optional 'sharp' package is strongly recommended. Run 'npm i sharp', and Next.js will use it automatically for Image Optimization.
+Read more: https://nextjs.org/docs/messages/sharp-missing-in-production
+ ✓ Compiled successfully
+   Collecting page data ...
+   Generating static pages (0/3) ...
+ ✓ Generating static pages (3/3)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (pages)                             Size     First Load JS
+┌ ○ / (312 ms)                            51.8 kB         132 kB
+├   /_app                                 0 B            79.9 kB
+└ ○ /404                                  180 B          80.1 kB
++ First Load JS shared by all             84.7 kB
+  ├ chunks/framework-e82a91356956e6c8.js  44.8 kB
+  ├ chunks/main-649ec8a06016bc09.js       34 kB
+  └ other shared chunks (total)           5.86 kB
+
+○  (Static)  prerendered as static content
+

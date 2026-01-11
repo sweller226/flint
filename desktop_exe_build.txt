@@ -1,0 +1,42 @@
+
+> @flint/desktop@0.1.0 electron:build
+> next build && tsc -p electron && electron-builder
+
+  ▲ Next.js 14.2.35
+
+   Linting and checking validity of types ...
+
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you. Strict-mode is set to false by default.
+   The following mandatory changes were made to your tsconfig.json:
+
+   	- jsx was set to preserve (next.js implements its own optimized jsx transform)
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./src/components/ChartPanel.tsx
+Module not found: Can't resolve 'axios'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/pages/index.tsx
+
+./src/components/FlintChart.tsx
+Module not found: Can't resolve 'lightweight-charts'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/components/ChartPanel.tsx
+./src/pages/index.tsx
+
+
+> Build failed because of webpack errors
+npm error Lifecycle script `electron:build` failed with error:
+npm error code 1
+npm error path C:\Users\33576\flint\apps\desktop
+npm error workspace @flint/desktop@0.1.0
+npm error location C:\Users\33576\flint\apps\desktop
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c next build && tsc -p electron && electron-builder

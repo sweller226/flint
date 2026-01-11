@@ -1,0 +1,32 @@
+
+> @flint/web@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Linting and checking validity of types ...
+
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you. Strict-mode is set to false by default.
+   The following mandatory changes were made to your tsconfig.json:
+
+   	- jsx was set to preserve (next.js implements its own optimized jsx transform)
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Collecting page data ...
+   Generating static pages (0/3) ...
+ ✓ Generating static pages (3/3)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (pages)                             Size     First Load JS
+┌ ○ /                                     1.64 kB        81.6 kB
+├   /_app                                 0 B            79.9 kB
+└ ○ /404                                  180 B          80.1 kB
++ First Load JS shared by all             83.2 kB
+  ├ chunks/framework-e82a91356956e6c8.js  44.8 kB
+  ├ chunks/main-649ec8a06016bc09.js       34 kB
+  └ other shared chunks (total)           4.36 kB
+
+○  (Static)  prerendered as static content
+

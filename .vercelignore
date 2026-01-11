@@ -1,0 +1,23 @@
+# Ignore heavy data (Market Data)
+services/api/data
+*.csv
+*.parquet
+
+# Ignore Desktop App artifacts
+apps/desktop/dist
+apps/desktop/out
+apps/desktop/build
+
+# Ignore Python environments
+.venv
+venv
+services/api/venv
+
+# Ignore Git
+.git
+
+# Ignore logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

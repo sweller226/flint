@@ -10,8 +10,10 @@
     "dependencies": {
         "@flint/config": "*",
         "@flint/ui": "*",
+        "@gsap/react": "^2.1.2",
         "clsx": "^2.1.1",
         "framer-motion": "^11.9.0",
+        "gsap": "^3.14.2",
         "next": "^14.2.15",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
