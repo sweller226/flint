@@ -67,6 +67,38 @@ export default function Home() {
             { scale: 1, y: 0, opacity: 1, rotateX: 0, duration: 1.5 },
             0
         );
+
+        // Kinetic Axis Scroll Transitions
+        const sections = gsap.utils.toArray('.feature-node');
+        
+        sections.forEach((node: any) => {
+            const title = node.querySelector('.feature-title');
+            const dot = node.querySelector('.feature-dot');
+            const color = node.dataset.color;
+
+            gsap.timeline({
+                scrollTrigger: {
+                    trigger: node,
+                    // Starts the transition when the node is 95% from the top (right as it enters the screen)
+                    start: "top 95%", 
+                    // Completes the transition when the node is 65% from the top (lower-third of the screen)
+                    end: "top 65%",   
+                    scrub: 1,         
+                    toggleActions: "play reverse play reverse"
+                }
+            })
+            .to(title, { 
+                color: color, 
+                opacity: 1, 
+                duration: 1 
+            })
+            .to(dot, { 
+                backgroundColor: color, 
+                boxShadow: `0 0 20px ${color}`, 
+                scale: 1.25, 
+                duration: 1 
+            }, 0);
+        });
     }, { scope: container });
 
     return (
@@ -134,7 +166,7 @@ export default function Home() {
                     <h1 className="hero-animate text-5xl lg:text-[clamp(4rem,6vw,7.2rem)] font-[900] uppercase tracking-[-0.02em] mb-10 leading-[1.0] text-textMain">
                         Trade the <span className="text-primary">Momentum</span>. <br/>
                         Master the <span className="text-[#00FFA3]">
-                            <span className="relative inline-block">Spread <span className="absolute bottom-2 left-0 w-full h-[3px] bg-[#00FFA3]/30" /></span>
+                            <span className="relative inline-block">Spread</span>
                         </span>.
                     </h1>
                     
@@ -186,16 +218,16 @@ export default function Home() {
                 <div className="max-w-[1400px] mx-auto relative flex flex-col gap-64">
                     
                     {/* Node 1: Predictive Modeling - Muted Mint */}
-                    <div className="flex flex-col lg:flex-row items-center justify-center group">
+                    <div className="feature-node flex flex-col lg:flex-row items-center justify-center" data-color="#94D2BD">
                         <div className="lg:w-[38%] text-right lg:pr-12">
-                            <h3 className="text-5xl lg:text-[clamp(4rem,6vw,6.5rem)] font-[900] uppercase tracking-[-0.08em] leading-[0.82] text-white/40 group-hover:text-[#94D2BD]/80 transition-colors duration-700">
+                            <h3 className="feature-title text-5xl lg:text-[clamp(4rem,6vw,6.5rem)] font-[900] uppercase tracking-[-0.08em] leading-[0.82] text-white opacity-30 transition-all duration-700">
                                 Predictive<br/>Modeling
                             </h3>
                         </div>
                         
                         <div className="relative w-12 h-12 hidden lg:flex items-center justify-center z-20">
-                            <div className="w-4 h-4 rounded-full bg-white/20 group-hover:bg-[#94D2BD] group-hover:scale-125 group-hover:shadow-[0_0_15px_#94D2BD] transition-all duration-500" />
-                            <div className="absolute inset-0 border border-white/5 rounded-full scale-[2] group-hover:border-[#94D2BD]/20 transition-all duration-500" />
+                            <div className="feature-dot w-4 h-4 rounded-full bg-white/20 transition-all duration-500" />
+                            <div className="absolute inset-0 border border-white/5 rounded-full scale-[2]" />
                         </div>
 
                         <div className="lg:w-[38%] lg:pl-12 mt-8 lg:mt-0">
@@ -206,7 +238,7 @@ export default function Home() {
                     </div>
 
                     {/* Node 2: Autonomous Execution - Muted Blue */}
-                    <div className="flex flex-col lg:flex-row items-center justify-center group">
+                    <div className="feature-node flex flex-col lg:flex-row items-center justify-center" data-color="#4DB9E7">
                         <div className="lg:w-[38%] text-right lg:pr-12 order-2 lg:order-1">
                             <p className="text-xl lg:text-2xl text-textMuted font-medium max-w-sm ml-auto leading-relaxed opacity-80">
                                 Advanced automated trading logic executing entries based on institutional bias and risk parameters.
@@ -214,27 +246,27 @@ export default function Home() {
                         </div>
 
                         <div className="relative w-12 h-12 hidden lg:flex items-center justify-center z-20 order-1 lg:order-2">
-                            <div className="w-4 h-4 rounded-full bg-white/20 group-hover:bg-[#4DB9E7]/80 group-hover:scale-125 group-hover:shadow-[0_0_15px_#4DB9E7] transition-all duration-500" />
-                            <div className="absolute inset-0 border border-white/5 rounded-full scale-[2] group-hover:border-[#4DB9E7]/20 transition-all duration-500" />
+                            <div className="feature-dot w-4 h-4 rounded-full bg-white/20 transition-all duration-500" />
+                            <div className="absolute inset-0 border border-white/5 rounded-full scale-[2]" />
                         </div>
 
                         <div className="lg:w-[38%] text-left lg:pl-12 order-3">
-                            <h3 className="text-5xl lg:text-[clamp(4rem,6vw,6.5rem)] font-[900] uppercase tracking-[-0.08em] leading-[0.82] text-white/40 group-hover:text-[#4DB9E7]/70 transition-colors duration-700">
+                            <h3 className="feature-title text-5xl lg:text-[clamp(4rem,6vw,6.5rem)] font-[900] uppercase tracking-[-0.08em] leading-[0.82] text-white opacity-30 transition-all duration-700">
                                 Autonomous<br/>Execution
                             </h3>
                         </div>
                     </div>
 
                     {/* Node 3: Solana Logging - Muted Purple */}
-                    <div className="flex flex-col lg:flex-row items-center justify-center group">
+                    <div className="feature-node flex flex-col lg:flex-row items-center justify-center" data-color="#BB86FC">
                         <div className="lg:w-[38%] text-right lg:pr-12">
-                            <h3 className="text-5xl lg:text-[clamp(4rem,6vw,6.5rem)] font-[900] uppercase tracking-[-0.08em] leading-[0.82] text-white/40 group-hover:text-[#BB86FC]/80 transition-all duration-700">
+                            <h3 className="feature-title text-5xl lg:text-[clamp(4rem,6vw,6.5rem)] font-[900] uppercase tracking-[-0.08em] leading-[0.82] text-white opacity-30 transition-all duration-700">
                                 Solana<br/>Logging
                             </h3>
                         </div>
                         <div className="relative w-12 h-12 hidden lg:flex items-center justify-center z-20">
-                            <div className="w-4 h-4 rounded-full bg-white/20 group-hover:bg-[#BB86FC] group-hover:shadow-[0_0_15px_#BB86FC] transition-all duration-500" />
-                            <div className="absolute inset-0 border border-white/5 rounded-full scale-[2] group-hover:border-[#BB86FC]/20 transition-all duration-500" />
+                            <div className="feature-dot w-4 h-4 rounded-full bg-white/20 transition-all duration-500" />
+                            <div className="absolute inset-0 border border-white/5 rounded-full scale-[2]" />
                         </div>
                         <div className="lg:w-[38%] lg:pl-12 mt-8 lg:mt-0">
                             <p className="text-xl lg:text-2xl text-textMuted font-medium max-w-sm leading-relaxed text-left opacity-80">
