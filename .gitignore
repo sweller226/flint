@@ -8,6 +8,10 @@ Thumbs.db
 *.so
 *.dylib
 
+# Artifacts
+*.csv
+artifacts
+
 # Node
 node_modules/
 dist/
