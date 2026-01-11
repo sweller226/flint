@@ -11,3 +11,41 @@ body {
     color: rgb(var(--foreground-rgb));
     background: rgb(var(--background-rgb));
 }
+
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+
+.perspective-terminal {
+  perspective: 2000px;
+}
+
+@layer base {
+  :root {
+    /* Map your provided flintTheme values here */
+    --primary: #2563EB;
+    --secondary: #22C55E;
+    --accent: #6366F1;
+    --bg-dark: #0B0F1A;
+    --panel-dark: #020617;
+    --subpanel-dark: #02081F;
+    --border-dark: #0F172A;
+    --text-main: #F9FAFB;
+    --text-muted: #9CA3AF;
+  }
+}
+
+:root {
+  --font-display: 'Inter', system-ui, sans-serif;
+}
+
+h1, h2 {
+  /* Tight tracking makes the font look custom/branded */
+  letter-spacing: -0.05em; 
+  text-transform: uppercase; /* Institutional feel */
+}
+
+p {
+  letter-spacing: -0.01em;
+  font-weight: 450; /* Slightly heavier than normal for 'premium' feel */
+}
