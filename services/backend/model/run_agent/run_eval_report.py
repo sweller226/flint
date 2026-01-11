@@ -16,6 +16,7 @@ from ..trade_env.sample_builder import WeekSample
 from .model_metadata import load_model_meta
 from .ppo_pipeline import PPOEvalConfig, evaluate_ppo_multi
 
+# - python -m services.backend.model.run_agent.run_eval_report --contract H --start-ts "2025-09-15T07:00:00Z" --align next
 
 # No-args evaluation settings
 EPISODES = 200

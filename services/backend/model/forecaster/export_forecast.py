@@ -1,9 +1,9 @@
 """CLI: export a next-hour seq2seq forecast to a CSV with df_h.csv-compatible columns.
 
 Example
-  python services/backend/model/forecaster/export_forecast.py \
+    python -m services.backend.model.forecaster.export_forecast \
     --contract H \
-    --start-ts "2016-01-10 23:00:00+00:00" \
+        --start-ts "2016-01-10T23:00:00Z" \
     --checkpoint services/backend/model/forecaster/artifacts/lstm_forecaster.pt \
     --scaler-json services/backend/model/forecaster/artifacts/scaler.json \
     --out services/backend/model/forecaster/artifacts/forecast_H_2016-01-10T23-00-00Z.csv
@@ -20,14 +20,26 @@ from pathlib import Path
 
 import pandas as pd
 
-from sample_builder import (
-    build_forecast_timestamps,
-    build_sample_windows,
-    load_contract_csv,
-    parse_utc_timestamp,
-    validate_request_timestamp_range,
-)
-from seq2seq_forecaster import load_artifacts, forecast_next_hour_delta_last
+# Supports:
+# - python -m services.backend.model.forecaster.export_forecast --contract H --start-ts "2025-09-15T07:00:00Z" --align next
+if __package__:
+    from .sample_builder import (
+        build_forecast_timestamps,
+        build_sample_windows,
+        load_contract_csv,
+        parse_utc_timestamp,
+        validate_request_timestamp_range,
+    )
+    from .seq2seq_forecaster import load_artifacts, forecast_next_hour_delta_last
+else:  # pragma: no cover
+    from sample_builder import (
+        build_forecast_timestamps,
+        build_sample_windows,
+        load_contract_csv,
+        parse_utc_timestamp,
+        validate_request_timestamp_range,
+    )
+    from seq2seq_forecaster import load_artifacts, forecast_next_hour_delta_last
 
 
 # === Script Parameters (optional) ===
@@ -35,7 +47,7 @@ from seq2seq_forecaster import load_artifacts, forecast_next_hour_delta_last
 #   python services/backend/model/forecaster/export_forecast.py
 # CLI flags still override these defaults when provided.
 CONTRACT: str = "H"  # H|M|U|Z
-START_TS: str | None = "2019-03-15 01:04:00+00:00"  # e.g. "2019-02-15 01:04:00+00:00"
+START_TS: str | None = None  # e.g. "2019-02-15T01:04:00Z"
 ALIGN: str = "next"  # exact|next|prev|nearest
 HORIZON: int = 60
 
@@ -181,9 +193,7 @@ def main() -> int:
     contract = args.contract or CONTRACT
     start_ts = args.start_ts or START_TS
     if start_ts is None:
-        raise SystemExit(
-            "Missing start timestamp. Provide --start-ts on the command line, or set START_TS at the top of export_forecast.py"
-        )
+        raise SystemExit("Missing start timestamp. Provide --start-ts (UTC), e.g. 2025-09-15T07:00:00Z")
 
     checkpoint = args.checkpoint
     if CHECKPOINT_PATH is not None and args.checkpoint == _default_artifacts_dir() / "lstm_forecaster.pt":
@@ -197,19 +207,23 @@ def main() -> int:
     if OUT_PATH is not None and args.out is None:
         out = Path(OUT_PATH)
 
-    _exported = export_forecast(
-        contract=contract,
-        start_ts=str(start_ts),
-        align=args.align if args.align is not None else ALIGN,
-        horizon=int(args.horizon) if args.horizon is not None else HORIZON,
-        data_dir=args.data_dir,
-        checkpoint=checkpoint,
-        scaler_json=scaler_json,
-        out=out,
-        log_volume=bool(args.log_volume) if args.log_volume is not None else LOG_VOLUME,
-        days=args.days,
-        day_len=args.day_len,
-    )
+    try:
+        _exported = export_forecast(
+            contract=contract,
+            start_ts=str(start_ts),
+            align=args.align if args.align is not None else ALIGN,
+            horizon=int(args.horizon) if args.horizon is not None else HORIZON,
+            data_dir=args.data_dir,
+            checkpoint=checkpoint,
+            scaler_json=scaler_json,
+            out=out,
+            log_volume=bool(args.log_volume) if args.log_volume is not None else LOG_VOLUME,
+            days=args.days,
+            day_len=args.day_len,
+        )
+    except RuntimeError as exc:
+        # Common: missing torch. Exit cleanly for CLI usage.
+        raise SystemExit(str(exc)) from None
     return 0
 
 
