@@ -6,51 +6,34 @@ type FlintLogoProps = {
     size?: number;   // overall height in px
 };
 
+import logo from "../assets/logo_text.png";
+import Image from "next/image";
+
 export const FlintLogo: React.FC<FlintLogoProps> = ({
     withText = true,
     light = false,
     size = 48,
 }) => {
-    const textFill = light ? "#111827" : "#F9FAFB";
+    // Determine height and width to maintain aspect ratio (text logo is wider)
+    // Assuming approx 3:1 aspect ratio for text logo based on visual
+    const height = size;
+    const width = withText ? size * 3.5 : size;
 
     return (
-        <svg
-            width={withText ? size * 4 : size}
-            height={size}
-            viewBox={withText ? "0 0 200 60" : "0 0 48 48"}
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <defs>
-                <linearGradient id="flintGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#00FFA3" />
-                    <stop offset="45%" stopColor="#03E1FF" />
-                    <stop offset="100%" stopColor="#DC1FFF" />
-                </linearGradient>
-            </defs>
-
-            {/* mark */}
-            <g transform={withText ? "translate(4,4)" : ""}>
-                <rect x="0" y="0" width="48" height="48" rx="16" fill="url(#flintGradient)" />
-                <rect x="16" y="12" width="8" height="24" rx="4" fill="#020814" />
-                <rect x="16" y="12" width="14" height="8" rx="4" fill="#020814" />
-                <path d="M34 14 L40 10 L40 18 Z" fill="#020814" opacity="0.9" />
-            </g>
-
-            {withText && (
-                <g transform="translate(64, 15)">
-                    <text
-                        x="0"
-                        y="22"
-                        fontFamily="Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
-                        fontSize="24"
-                        fontWeight="600"
-                        letterSpacing="1.2"
-                        fill={textFill}
-                    >
-                        FLINT
-                    </text>
-                </g>
+        <div style={{ height, width: withText ? 'auto' : size, overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+            {withText ? (
+                <img src={logo.src} alt="Flint" style={{ height: '100%', width: 'auto', objectFit: 'contain' }} />
+            ) : (
+                // If no text, crop/show only the icon part or just scale it down?
+                // For now, let's just show the full logo but smaller if !withText, or strictly speaking
+                // we should have a separate icon-only asset. The user provided two assets.
+                // Image 0 was round icon, Image 1 was text logo.
+                // If withText=false, we might want to use the round icon?
+                // But the user said "use the second image PURELY for in the app replacing that old logo design"
+                // The old design had a mode withText vs without.
+                // Let's assume for now we just show the text logo.
+                <img src={logo.src} alt="Flint" style={{ height: '100%', width: 'auto', objectFit: 'contain' }} />
             )}
-        </svg>
+        </div>
     );
 };
