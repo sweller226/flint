@@ -1,36 +1,40 @@
+import os
 import json
-import base58
-import time
-from datetime import datetime
-import asyncio
+from solana.rpc.api import Client
+from solders.pubkey import Pubkey
+from solders.instruction import Instruction
+from solders.message import MessageV0
+from solders.transaction import VersionedTransaction
+from .wallet_loader import get_audit_wallet
 
-# Hackathon: Log to local file
-TRADE_LOG_FILE = "trades.jsonl"
+# The fixed Program ID for Solana's native Memo service
+MEMO_PROGRAM_ID = Pubkey.from_string("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
 
-async def log_trade_to_solana(trade_data: dict):
-    """
-    Simulate Solana logging.
-    """
-    # Fake Signature
-    # In real world: send transaction to Devnet
-    tx_sig = f"5{base58.b58encode(b'flint_trade_' + str(time.time()).encode()).decode()[:80]}"
+def log_trade_to_solana(trade_details: dict):
+    client = Client(os.getenv("SOLANA_RPC_URL"))
+    wallet = get_audit_wallet()
     
-    log_entry = {
-        "timestamp": datetime.now().isoformat(),
-        "trade": trade_data,
-        "solana_tx_sig": tx_sig,
-        "devnet_link": f"https://solscan.io/tx/{tx_sig}?cluster=devnet"
-    }
-
-    # Write to file
-    try:
-        with open(TRADE_LOG_FILE, "a") as f:
-            f.write(json.dumps(log_entry) + "\n")
-    except Exception as e:
-        print(f"Error logging trade: {e}")
-
-    return {
-        "success": True,
-        "tx_sig": tx_sig,
-        "devnet_link": log_entry["devnet_link"]
-    }
+    # 1. Prepare data (Serialize trade dict to bytes)
+    memo_data = json.dumps(trade_details).encode("utf-8")
+    
+    # 2. Create the Memo Instruction
+    memo_ix = Instruction(
+        program_id=MEMO_PROGRAM_ID,
+        data=memo_data,
+        accounts=[] # Memo program doesn't require specific accounts
+    )
+    
+    # 3. Build the Transaction
+    recent_blockhash = client.get_latest_blockhash().value.blockhash
+    message = MessageV0.try_compile(
+        payer=wallet.pubkey(),
+        instructions=[memo_ix],
+        address_lookup_table_accounts=[],
+        recent_blockhash=recent_blockhash
+    )
+    
+    transaction = VersionedTransaction(message, [wallet])
+    
+    # 4. Send and return the Signature
+    response = client.send_transaction(transaction)
+    return response.value  # This is the Tx Hash (e.g., "5HzW...")
