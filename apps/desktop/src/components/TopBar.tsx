@@ -10,8 +10,6 @@ export const TopBar = () => (
             <div className="inline-flex items-center gap-2 rounded-lg bg-flint-subpanel px-3 py-1 text-[11px] text-flint-text-secondary border border-flint-border">
                 <span className="h-2 w-2 rounded-full bg-flint-secondary animate-pulse" />
                 <span className="font-bold text-flint-text-primary uppercase tracking-wider">ES Futures</span>
-                <span className="opacity-30">|</span>
-                <span className="uppercase tracking-widest font-semibold italic text-flint-accent">Replay: Jan 03, 2017</span>
             </div>
         </div>
 
