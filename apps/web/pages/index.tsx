@@ -102,7 +102,7 @@ export default function Home() {
     }, { scope: container });
 
     return (
-        <main className="min-h-screen bg-flint-bg text-flint-text-primary font-sans selection:bg-flint-primary selection:text-white">
+        <main ref={container} className="min-h-screen bg-flint-bg text-flint-text-primary font-sans selection:bg-flint-primary selection:text-white">
             <Head>
                 <title>Flint | ES Futures Terminal</title>
             </Head>
