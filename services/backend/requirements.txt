@@ -9,11 +9,3 @@ python-dotenv
 websockets
 scikit-learn
 base58
-
-# RL (discrete PPO)
-gymnasium
-stable-baselines3
-
-# Used by model/forecaster/forecasting_engine.py
-torch
-matplotlib
