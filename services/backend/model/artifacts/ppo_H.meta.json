@@ -1,0 +1,42 @@
+{
+  "action_scheme": "legacy3",
+  "bar_minutes": 1,
+  "contract": "H",
+  "contracts": null,
+  "created_at_utc": "2026-01-11T05:16:50.664940+00:00",
+  "env_config": {
+    "auto_close_on_done": true,
+    "flat_penalty_per_step": 0.0,
+    "flat_penalty_start_step": 0,
+    "hold_action_penalty": 0.001,
+    "hold_action_penalty_start_step": 5,
+    "holding_penalty_per_step": 0.0,
+    "holding_penalty_start_step": 0,
+    "invalid_action_penalty": 0.0,
+    "min_entry_step": 5,
+    "no_trade_penalty": 0.2,
+    "trade_cost": 0.01,
+    "trade_penalty": 0.02
+  },
+  "obs_config": {
+    "forecast_closes": 60,
+    "ict_config": {
+      "lookback_1m": 120,
+      "lookback_5m": 60,
+      "orb_minutes": 5,
+      "swing_lookback_1h": 12,
+      "swing_lookback_1m": 20,
+      "swing_lookback_4h": 12,
+      "swing_lookback_5m": 12
+    },
+    "last_closes": 60,
+    "normalize_by_current_close": true,
+    "use_entry_price": true,
+    "use_ict_features": true,
+    "use_ohlcv": true,
+    "use_position": true,
+    "use_time_fraction": true
+  },
+  "seed": 42,
+  "timesteps": 6000
+}
