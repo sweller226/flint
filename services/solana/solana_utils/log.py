@@ -7,24 +7,22 @@ from solders.message import MessageV0
 from solders.transaction import VersionedTransaction
 from .wallet_loader import get_audit_wallet
 
-# The fixed Program ID for Solana's native Memo service
 MEMO_PROGRAM_ID = Pubkey.from_string("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
 
 def log_trade_to_solana(trade_details: dict):
-    client = Client(os.getenv("SOLANA_RPC_URL"))
+    # Use Devnet by default if URL isn't in env
+    rpc_url = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
+    client = Client(rpc_url)
     wallet = get_audit_wallet()
     
-    # 1. Prepare data (Serialize trade dict to bytes)
     memo_data = json.dumps(trade_details).encode("utf-8")
     
-    # 2. Create the Memo Instruction
     memo_ix = Instruction(
         program_id=MEMO_PROGRAM_ID,
         data=memo_data,
-        accounts=[] # Memo program doesn't require specific accounts
+        accounts=[]
     )
     
-    # 3. Build the Transaction
     recent_blockhash = client.get_latest_blockhash().value.blockhash
     message = MessageV0.try_compile(
         payer=wallet.pubkey(),
@@ -34,7 +32,5 @@ def log_trade_to_solana(trade_details: dict):
     )
     
     transaction = VersionedTransaction(message, [wallet])
-    
-    # 4. Send and return the Signature
     response = client.send_transaction(transaction)
-    return response.value  # This is the Tx Hash (e.g., "5HzW...")
+    return response.value
