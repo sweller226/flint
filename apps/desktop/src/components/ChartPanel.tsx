@@ -1,176 +1,161 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Chart } from "./Chart"; // Import existing Chart component
+import React, { useEffect, useState } from "react";
+import { FlintChart, Candle } from "./FlintChart";
+// import { TerminalChartMock } from "./TerminalChartMock";
+import axios from "axios";
 
-interface ChartPanelProps {
-    candles: any[];
-    ictLevels: any;
-    symbol?: string;
-    onSymbolChange?: (sym: string) => void;
-    timeframe?: string;
-    onTimeframeChange?: (tf: string) => void;
-}
+const TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1D", "1W", "1M"];
 
-export const ChartPanel: React.FC<ChartPanelProps> = ({
-    candles, ictLevels, symbol = "ES", onSymbolChange, timeframe = "1m", onTimeframeChange
-}) => {
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const searchInputRef = useRef<HTMLInputElement>(null);
+// ES Futures contract quarters
+const ES_CONTRACTS = [
+    { code: "H", label: "Q1 (Mar)" },
+    { code: "M", label: "Q2 (Jun)" },
+    { code: "U", label: "Q3 (Sep)" },
+    { code: "Z", label: "Q4 (Dec)" },
+];
 
-    // Global Keydown Listener for Type-to-Search
+// Helper to format timestamp for slider display (Removed)
+
+export const ChartPanel = () => {
+    const [timeframe, setTimeframe] = useState("1m");
+    const [contract, setContract] = useState("H"); // Default to Q1 (March)
+
+    const [candles, setCandles] = useState<Candle[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Tool State
+    const [activeTool, setActiveTool] = useState<"none" | "trendline" | "hline">("none");
+    const [annotations, setAnnotations] = useState<any[]>([]);
+
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if searching or typing in another input
-            if (isSearchOpen) return;
-            if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
+        const fetchHistory = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // Determine width in seconds
+                const tfMap: Record<string, number> = {
+                    "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
+                    "1h": 3600, "4h": 14400, "1D": 86400, "1W": 604800, "1M": 2592000
+                };
+                const width = tfMap[timeframe] || 60;
 
-            // Check if character is alphanumeric
-            if (/^[a-zA-Z0-9]$/.test(e.key)) {
-                setIsSearchOpen(true);
-                setSearchQuery(e.key.toUpperCase());
+                // Fetch data from new backend with contract, width, and date range
+                const res = await axios.get(`http://localhost:8000/api/candles?contract=${contract}&limit=10000&width_seconds=${width}`, { timeout: 30000 });
+
+                if (res.data && res.data.candles) {
+                    const mapped = res.data.candles.map((c: any) => ({
+                        time: Date.parse(c.timestamp) / 1000,
+                        open: c.open,
+                        high: c.high,
+                        low: c.low,
+                        close: c.close,
+                    }));
+                    setCandles(mapped);
+                } else {
+                    setError("Empty Data");
+                }
+            } catch (err: any) {
+                console.error("Failed to fetch candles:", err);
+                setError(err.message || "Connection Err");
+            } finally {
+                setLoading(false);
             }
         };
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isSearchOpen]);
-
-    // Focus input when search opens
-    useEffect(() => {
-        if (isSearchOpen && searchInputRef.current) {
-            searchInputRef.current.focus();
-        }
-    }, [isSearchOpen]);
-
-    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, visible: boolean }>({ x: 0, y: 0, visible: false });
-    const [activeTool, setActiveTool] = useState("cursor");
-
-    // Close context menu on click
-    useEffect(() => {
-        const handleClick = () => setContextMenu({ ...contextMenu, visible: false });
-        window.addEventListener("click", handleClick);
-        return () => window.removeEventListener("click", handleClick);
-    }, [contextMenu]);
-
-    const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setContextMenu({
-            x: e.clientX,
-            y: e.clientY,
-            visible: true
-        });
-    };
-
-    const handleSearchCheck = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            onSymbolChange?.(searchQuery);
-            setIsSearchOpen(false);
-        }
-        if (e.key === "Escape") {
-            setIsSearchOpen(false);
-        }
-    };
+        fetchHistory();
+    }, [timeframe, contract]);
 
     return (
-        <div className="h-full flex flex-col relative" onContextMenu={handleContextMenu}>
-            {/* Custom Context Menu */}
-            {contextMenu.visible && (
-                <div
-                    className="fixed z-[100] bg-[#1E222D] border border-[#2A2E39] rounded shadow-lg py-2 w-48 text-sm"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                >
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0] flex justify-between">
-                        <span>Reset Chart</span>
-                        <span className="text-[#555]">Alt+R</span>
-                    </div>
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0]">Copy Price</div>
-                    <div className="my-1 border-t border-[#2A2E39]"></div>
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0]">Add Alert...</div>
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0]">Trade {symbol}</div>
-                    <div className="my-1 border-t border-[#2A2E39]"></div>
-                    <div className="px-4 py-2 hover:bg-[#2A2E39] cursor-pointer text-[#E0E0E0]">Settings...</div>
-                </div>
-            )}
-
-            {/* Symbol Search Modal (TradingView Style) */}
-            {isSearchOpen && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setIsSearchOpen(false)}>
-                    <div className="bg-[#1E222D] border border-[#2A2E39] rounded-lg shadow-2xl w-[400px] overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between">
-                            <h3 className="text-[#E0E0E0] font-medium">Symbol Search</h3>
-                            <button onClick={() => setIsSearchOpen(false)} className="text-[#9A9A9A] hover:text-white">✕</button>
-                        </div>
-                        <div className="p-4">
-                            <input
-                                ref={searchInputRef}
-                                className="w-full bg-[#10141C] border border-[#2A2E39] rounded px-3 py-2 text-xl text-white uppercase outline-none focus:border-[#2962FF]"
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value.toUpperCase())}
-                                onKeyDown={handleSearchCheck}
-                                placeholder="Symbol (e.g. BTC)"
-                            />
-                            <div className="mt-4 text-[#9A9A9A] text-xs">
-                                Press <span className="text-[#E0E0E0] font-bold">ENTER</span> to select
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Chart header: tabs like Kraken */}
-            <div className="flex items-center justify-between px-3 h-10 border-b border-[#10141C] text-[11px] bg-[#050B10]">
-                <div className="flex gap-2 items-center">
-                    <div className="flex items-center bg-[#10141C] rounded border border-[#1A202C] px-2 py-1 cursor-pointer hover:border-[#2962FF] transition-colors" onClick={() => setIsSearchOpen(true)}>
-                        <span className="text-[#9A9A9A] mr-2">Ticker:</span>
-                        <span className="text-[#E0E0E0] font-bold w-16 text-center block">{symbol}</span>
+        <div className="h-full flex flex-col bg-flint-panel relative overflow-hidden rounded-xl border border-flint-border shadow-lg">
+            {/* Header */}
+            <div className="h-12 border-b border-flint-border flex items-center justify-between px-4 bg-flint-panel z-10">
+                <div className="flex gap-4 items-center">
+                    {/* Ticker Selector Placeholder - currently fixed to ES */}
+                    <div className="flex items-center bg-flint-subpanel rounded-lg p-1 border border-flint-border">
+                        <span className="px-3 py-1 rounded-md text-[11px] font-bold bg-flint-blue text-white shadow-sm">ES</span>
                     </div>
 
-                    <div className="flex bg-[#10141C] rounded border border-[#1A202C]">
-                        {['1m', '5m', '15m', '1h', '4h'].map(tf => (
+                    <div className="flex items-center gap-1">
+                        {TIMEFRAMES.map(t => (
                             <button
-                                key={tf}
-                                onClick={() => onTimeframeChange?.(tf)}
-                                className={`px-2 py-1 hover:bg-[#202530] transition-colors ${timeframe === tf ? 'text-[#00E5FF] font-bold' : 'text-[#9A9A9A]'}`}
+                                key={t}
+                                onClick={() => setTimeframe(t)}
+                                className={`px-2 py-1 rounded text-[11px] font-medium transition-all ${timeframe === t ? "text-flint-blue bg-flint-blue/10" : "text-flint-text-muted hover:text-white"}`}
                             >
-                                {tf}
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+                    {/* Contract Selector - Always show now since we removed symbol selector */}
+                    <div className="flex items-center bg-flint-subpanel rounded-lg p-1 border border-flint-border">
+                        {ES_CONTRACTS.map(c => (
+                            <button
+                                key={c.code}
+                                onClick={() => setContract(c.code)}
+                                className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${contract === c.code ? "bg-flint-green text-white shadow-sm" : "text-flint-text-muted hover:text-white hover:bg-white/5"}`}
+                                title={c.label}
+                            >
+                                {c.code}
                             </button>
                         ))}
                     </div>
                 </div>
-                <div className="flex gap-2 text-[#9A9A9A]">
-                    <button className="px-2 py-1 hover:bg-[#10141C] rounded transition-colors">Candles</button>
-                    <button className="px-2 py-1 hover:bg-[#10141C] rounded transition-colors">Indicators</button>
-                    <button className="px-2 py-1 hover:bg-[#10141C] rounded transition-colors">Layouts</button>
+
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        {loading ? (
+                            <span className="text-[10px] font-bold text-flint-blue animate-pulse">UPDATING...</span>
+                        ) : (
+                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-flint-green"><span className="h-1.5 w-1.5 rounded-full bg-flint-green shadow-[0_0_8px_rgba(34,197,94,0.8)]"></span> LIVE</span>
+                        )}
+                    </div>
+                    <div className="h-4 w-px bg-flint-border"></div>
+                    <button className="p-1.5 hover:bg-white/5 rounded text-flint-text-muted hover:text-white transition-all">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18M3 12h18" /></svg>
+                    </button>
+                    <button className="p-1.5 hover:bg-white/5 rounded text-flint-text-muted hover:text-white transition-all">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                    </button>
                 </div>
             </div>
 
-            {/* Chart area */}
-            <div className="flex-1 flex relative">
-                {/* Left tools column (Genuine TV interactions) */}
-                <div className="w-12 border-r border-[#10141C] flex flex-col items-center gap-1 py-2 text-[#9A9A9A] text-[16px] bg-[#050B10]">
-                    {['cursor', 'trend', 'fib', 'brush', 'text', 'ruler'].map(tool => (
+            <div className="flex-1 flex overflow-hidden relative">
+                {/* Tools Rail */}
+                <div className="w-12 border-r border-flint-border flex flex-col items-center gap-2 py-3 bg-flint-subpanel z-10">
+                    {[
+                        { id: "trendline" as const, icon: "✏️", label: "Draw Trendline" },
+                        { id: "hline" as const, icon: "➖", label: "Horizontal Line" },
+                    ].map(tool => (
                         <button
-                            key={tool}
-                            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${activeTool === tool ? 'text-[#2962FF] bg-[#10141C]' : 'hover:text-[#E0E0E0] hover:bg-[#10141C]'}`}
-                            onClick={() => setActiveTool(tool)}
+                            key={tool.id}
+                            onClick={() => setActiveTool(tool.id)}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${activeTool === tool.id ? "bg-flint-blue text-white shadow-[0_0_10px_rgba(37,99,235,0.3)]" : "text-flint-text-muted hover:bg-white/5 hover:text-white"}`}
+                            title={tool.label}
                         >
-                            {tool === 'cursor' && '✛'}
-                            {tool === 'trend' && '╱'}
-                            {tool === 'fib' && '≡'}
-                            {tool === 'brush' && '🖌️'}
-                            {tool === 'text' && 'T'}
-                            {tool === 'ruler' && '📏'}
+                            <span className="text-[14px]">{tool.icon}</span>
                         </button>
                     ))}
-                    <div className="flex-1"></div>
-                    <button className="w-8 h-8 flex items-center justify-center rounded hover:text-[#E0E0E0] hover:bg-[#10141C] mb-2">🗑️</button>
+
+                    <div className="w-6 h-px bg-flint-border my-1"></div>
+
+                    <button
+                        onClick={() => { setAnnotations([]); setActiveTool("none"); }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-flint-text-muted hover:text-flint-negative hover:bg-flint-negative/10 transition-all"
+                        title="Clear All"
+                    >
+                        <span className="text-[14px]">🗑️</span>
+                    </button>
                 </div>
 
-                {/* Chart container */}
-                <div className="flex-1 bg-[#001219] relative">
-                    <Chart candles={candles} ictLevels={ictLevels} />
+                {/* Chart Area */}
+                <div className="flex-1 relative bg-flint-bg">
+                    <FlintChart
+                        candles={candles}
+                        annotations={annotations}
+                    />
                 </div>
             </div>
+
+            {/* Context Menu Placeholder */}
         </div>
     );
 };

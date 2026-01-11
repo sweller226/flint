@@ -1,44 +1,73 @@
-import React from "react";
-import { Signal } from "./SignalList";
+import React, { useState, useEffect, useRef } from "react";
 
-interface RightRailProps {
-    signals: Signal[];
-    onExecute: (signal: Signal) => void;
-}
+export const RightRail = () => {
+    const [messages, setMessages] = useState<any[]>([]);
+    const [signals, setSignals] = useState<any[]>([]);
+    const [inputText, setInputText] = useState("");
+    const [isTyping, setIsTyping] = useState(false);
+    const ws = useRef<WebSocket | null>(null);
 
-export const RightRail: React.FC<RightRailProps> = ({ signals, onExecute }) => {
+    useEffect(() => {
+        const socket = new WebSocket("ws://localhost:8000/ws/signals");
+        ws.current = socket;
+
+        socket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === "SIGNAL") {
+                setSignals(prev => [msg.data, ...prev].slice(0, 10));
+            } else if (msg.type === "CHAT_RESPONSE") {
+                setIsTyping(false);
+                setMessages(prev => [...prev, { role: "ai", text: msg.text }]);
+            }
+        };
+
+        return () => socket.close();
+    }, []);
+
+    const sendMessage = () => {
+        if (!inputText.trim() || !ws.current) return;
+
+        const userMsg = inputText;
+        setMessages(prev => [...prev, { role: "user", text: userMsg }]);
+        ws.current.send(JSON.stringify({ type: "CHAT", text: userMsg }));
+        setInputText("");
+        setIsTyping(true);
+    };
+
     return (
-        <div className="h-full flex flex-col">
-            {/* Live signals */}
-            <div className="flex-1 border-b border-[#10141C] p-3 overflow-hidden flex flex-col">
-                <h3 className="text-[12px] font-semibold mb-2 text-[#E0E0E0]">Live Signals</h3>
+        <div className="flex flex-col gap-4 h-full">
+            {/* Signals */}
+            <div className="flex-1 rounded-2xl bg-flint-panel border border-flint-border p-4 overflow-hidden flex flex-col shadow-2xl shadow-black/50">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-[10px] font-black text-flint-text-secondary uppercase tracking-[0.2em]">Live Signals</h3>
+                    <span className="h-1.5 w-1.5 rounded-full bg-flint-secondary animate-pulse"></span>
+                </div>
 
-                <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-                    {signals.length === 0 && <p className="text-[11px] text-[#9A9A9A]">Waiting for signals...</p>}
+                <div className="flex-1 overflow-auto -mx-2 px-2 space-y-3 scrollbar-none">
+                    {signals.length === 0 && (
+                        <p className="text-flint-text-secondary/50 text-[10px] italic text-center py-10 uppercase tracking-widest">Awaiting market events...</p>
+                    )}
 
-                    {signals.map((signal, i) => (
-                        <div key={i} className="bg-[#001219] border border-[#10141C] rounded p-3 mb-2 text-[11px] hover:border-[#1A2E35] transition-colors">
-                            <div className="flex justify-between mb-1">
-                                <span className={`font-bold ${signal.type === 'LONG' ? 'text-[#94D2BD]' : 'text-[#FF6B6B]'}`}>
-                                    {signal.type} ES
+                    {signals.map((sig, i) => (
+                        <div key={i} className="bg-flint-bg/30 border border-flint-border p-3 rounded-xl hover:border-flint-primary/50 transition-all cursor-default group relative overflow-hidden">
+                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${sig.side === 'LONG' ? 'bg-flint-positive' : 'bg-flint-negative'}`}></div>
+                            <div className="flex justify-between items-center mb-2 pl-2">
+                                <span className={`font-black text-[11px] tracking-wider ${sig.side === 'LONG' ? 'text-flint-positive' : 'text-flint-negative'}`}>
+                                    {sig.side} ES
                                 </span>
-                                <span className="text-[#9A9A9A]">Now</span>
+                                <span className="text-[9px] font-bold text-flint-text-secondary uppercase">Live</span>
                             </div>
-                            <div className="flex justify-between text-[#9A9A9A] mb-2 font-mono">
-                                <span>@ {signal.entry.toFixed(2)}</span>
-                                <span className="text-[#FF6B6B]">SL {signal.stop_loss.toFixed(2)}</span>
-                                <span className="text-[#94D2BD]">TP {signal.take_profit.toFixed(2)}</span>
+                            <div className="text-flint-text-primary text-[11px] mb-4 pl-2 font-medium leading-relaxed">
+                                {sig.reason}
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-[#9A9A9A] italic">
-                                    {signal.reason.substring(0, 20)}...
-                                </span>
-                                <button
-                                    onClick={() => onExecute(signal)}
-                                    className="px-3 py-1.5 rounded bg-[#10141C] text-[10px] text-[#E0E0E0] hover:bg-[#00FFA3] hover:text-black font-bold transition-all"
-                                >
-                                    Sim Trade
-                                </button>
+                            <div className="pl-2">
+                                <div className="w-full bg-flint-bg h-1 rounded-full overflow-hidden mb-2">
+                                    <div className={`h-full transition-all duration-1000 ${sig.side === 'LONG' ? 'bg-flint-positive' : 'bg-flint-negative'}`} style={{ width: `${sig.confidence * 100}%` }}></div>
+                                </div>
+                                <div className="flex justify-between items-center text-[9px] text-flint-text-secondary font-black uppercase tracking-tighter">
+                                    <span>Confidence {Math.round(sig.confidence * 100)}%</span>
+                                    <button className="text-flint-primary hover:text-white transition-colors">Execute →</button>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -46,19 +75,49 @@ export const RightRail: React.FC<RightRailProps> = ({ signals, onExecute }) => {
             </div>
 
             {/* Strategy Lab */}
-            <div className="h-[260px] p-3 flex flex-col">
-                <h3 className="text-[12px] font-semibold mb-2 text-[#E0E0E0]">Strategy Lab (Gemini)</h3>
-                <div className="bg-[#001219] border border-[#10141C] rounded p-3 mb-2 text-[11px] text-[#9A9A9A] italic flex-1 overflow-y-auto">
-                    "Market is testing Asia session highs. Bearish FVG detected at 4840. Structure shift likely below 4790..."
+            <div className="h-[340px] rounded-2xl bg-flint-panel border border-flint-border p-4 flex flex-col shadow-2xl shadow-black/50">
+                <h3 className="text-[10px] font-black text-flint-text-secondary mb-4 uppercase tracking-[0.2em]">Strategy Lab</h3>
+
+                <div className="flex-1 overflow-auto mb-4 space-y-4 -mx-2 px-2 scrollbar-none">
+                    {messages.length === 0 && (
+                        <div className="bg-flint-primary/5 border border-flint-primary/10 rounded-xl p-4 text-flint-text-secondary text-[11px] leading-relaxed italic">
+                            “Asia session high swept. Price entering bullish FVG—look for long scalp targets.”
+                        </div>
+                    )}
+                    {messages.map((m, i) => (
+                        <div key={i} className={`p-3 rounded-2xl text-[11px] leading-relaxed border shadow-sm ${m.role === 'user'
+                                ? 'bg-flint-bg border-flint-border ml-6 text-flint-text-secondary rounded-br-none'
+                                : 'bg-flint-primary/10 border-flint-primary/20 mr-6 text-flint-text-primary rounded-bl-none'
+                            }`}>
+                            {m.text}
+                        </div>
+                    ))}
+                    {isTyping && (
+                        <div className="text-[10px] text-flint-primary font-bold animate-pulse px-2 uppercase tracking-widest">Flint is calculating...</div>
+                    )}
                 </div>
-                <textarea
-                    rows={3}
-                    placeholder="Ask Flint to explain this setup or refine your ICT idea..."
-                    className="w-full bg-[#001219] border border-[#10141C] rounded px-2 py-2 text-[11px] mb-2 focus:outline-none focus:border-[#03E1FF] text-[#E0E0E0]"
-                />
-                <button className="w-full py-2 rounded bg-gradient-to-r from-[#00FFA3] to-[#03E1FF] text-[#001219] text-[11px] font-bold hover:opacity-90 transition-opacity">
-                    Send to Gemini
-                </button>
+
+                <div className="flex gap-2">
+                    <textarea
+                        className="flex-1 bg-flint-bg border border-flint-border rounded-xl px-4 py-3 text-flint-text-primary text-[11px] resize-none focus:outline-none focus:border-flint-primary/50 placeholder-flint-text-secondary/50 transition-all h-20 scrollbar-none"
+                        placeholder="Ask strategy question..."
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                sendMessage();
+                            }
+                        }}
+                    />
+                    <button
+                        onClick={sendMessage}
+                        className="self-end p-3 rounded-xl bg-flint-primary text-white shadow-lg shadow-flint-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
+                        disabled={isTyping || !inputText.trim()}
+                    >
+                        ↑
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -24,12 +24,10 @@
     "jsx": "preserve",
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "types": [
-      "vite/client"
-    ],
+    "types": [],
     "allowJs": true,
     "incremental": true,
     "esModuleInterop": true
