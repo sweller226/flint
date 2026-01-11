@@ -1,7 +1,7 @@
 import os
 import sys
 import pandas as pd
-from solana_utils.log import log_trade_to_solana
+from solana_utils.solana_logger import log_trade_to_solana
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
