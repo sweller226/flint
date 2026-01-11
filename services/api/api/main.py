@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
 
-from api.routes import candles, websocket, ict, volume
+from api.routes import candles, websocket, ict, volume, contracts
 from api.dependencies import initialize_market_state
 
 
@@ -11,7 +11,7 @@ from api.dependencies import initialize_market_state
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup: Load market data
-    data_path = os.getenv("MARKET_DATA_PATH", "real_data.csv")
+    data_path = os.getenv("MARKET_DATA_PATH", "data/es_futures")
     
     try:
         initialize_market_state(data_path)
@@ -45,6 +45,7 @@ app.include_router(candles.router, prefix='/api')
 app.include_router(websocket.router, prefix='/api')
 app.include_router(ict.router, prefix='/api')
 app.include_router(volume.router, prefix='/api')
+app.include_router(contracts.router, prefix='/api')
 
 
 @app.get("/")

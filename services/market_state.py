@@ -29,25 +29,19 @@ class MarketState:
         Parameters
         ----------
         df : DataFrame
-            Must contain OHLCV columns:
-            ts_event, open, high, low, close, volume
-            Optional: symbol or contract_month
+            Must contain Databento OHLCV columns:
+            ts_event, open, high, low, close, volume, symbol
         instrument : str, optional
             If provided, filter rows to only this symbol (e.g., "ESH6")
         """
 
-        # Core required columns (symbol is optional - contracts may be in separate files)
+        # Expected Databento columns
         required_cols = {
-            "ts_event", "open", "high", "low", "close", "volume"
+            "ts_event", "open", "high", "low", "close", "volume", "symbol"
         }
         missing = required_cols.difference(df.columns)
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
-        
-        # Handle symbol/contract_month column aliasing
-        if "symbol" not in df.columns and "contract_month" in df.columns:
-            df = df.copy()
-            df["symbol"] = df["contract_month"]
 
         df = df.copy()
 
