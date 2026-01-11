@@ -13,20 +13,11 @@ const ES_CONTRACTS = [
     { code: "Z", label: "Q4 (Dec)" },
 ];
 
-// Helper to format timestamp for slider display
-const formatDate = (ts: number) => new Date(ts).toISOString().split('T')[0];
+// Helper to format timestamp for slider display (Removed)
 
 export const ChartPanel = () => {
-    // Limits
-    const MIN_DATE = new Date("2016-01-01").getTime();
-    const MAX_DATE = new Date("2026-02-01").getTime();
-
     const [timeframe, setTimeframe] = useState("1m");
     const [contract, setContract] = useState("H"); // Default to Q1 (March)
-
-    // Date Range State
-    const [startDate, setStartDate] = useState(MIN_DATE);
-    const [endDate, setEndDate] = useState(MAX_DATE);
 
     const [candles, setCandles] = useState<Candle[]>([]);
     const [loading, setLoading] = useState(false);
@@ -48,12 +39,8 @@ export const ChartPanel = () => {
                 };
                 const width = tfMap[timeframe] || 60;
 
-                // Format dates for API
-                const startStr = new Date(startDate).toISOString();
-                const endStr = new Date(endDate).toISOString();
-
                 // Fetch data from new backend with contract, width, and date range
-                const res = await axios.get(`http://localhost:8000/api/candles?contract=${contract}&limit=100000&width_seconds=${width}&start_time=${startStr}&end_time=${endStr}`, { timeout: 30000 });
+                const res = await axios.get(`http://localhost:8000/api/candles?contract=${contract}&limit=10000&width_seconds=${width}`, { timeout: 30000 });
 
                 if (res.data && res.data.candles) {
                     const mapped = res.data.candles.map((c: any) => ({
@@ -75,40 +62,16 @@ export const ChartPanel = () => {
             }
         };
         fetchHistory();
-    }, [timeframe, contract, startDate, endDate]);
+    }, [timeframe, contract]);
 
     return (
         <div className="h-full flex flex-col bg-flint-panel relative overflow-hidden rounded-xl border border-flint-border shadow-lg">
             {/* Header */}
             <div className="h-12 border-b border-flint-border flex items-center justify-between px-4 bg-flint-panel z-10">
                 <div className="flex gap-4 items-center">
-                    {/* Date Sliders */}
-                    <div className="flex items-center gap-4 bg-flint-subpanel rounded-lg p-2 border border-flint-border">
-                        <div className="flex items-center gap-2">
-                            <label className="text-[10px] text-flint-text-muted font-bold uppercase">Start</label>
-                            <input
-                                type="range"
-                                min={MIN_DATE}
-                                max={MAX_DATE}
-                                value={startDate}
-                                onChange={(e) => setStartDate(Number(e.target.value))}
-                                className="w-24 h-1 bg-flint-border rounded-lg appearance-none cursor-pointer"
-                            />
-                            <span className="text-[10px] text-white font-mono">{formatDate(startDate)}</span>
-                        </div>
-                        <div className="w-px h-4 bg-flint-border"></div>
-                        <div className="flex items-center gap-2">
-                            <label className="text-[10px] text-flint-text-muted font-bold uppercase">End</label>
-                            <input
-                                type="range"
-                                min={MIN_DATE}
-                                max={MAX_DATE}
-                                value={endDate}
-                                onChange={(e) => setEndDate(Number(e.target.value))}
-                                className="w-24 h-1 bg-flint-border rounded-lg appearance-none cursor-pointer"
-                            />
-                            <span className="text-[10px] text-white font-mono">{formatDate(endDate)}</span>
-                        </div>
+                    {/* Ticker Selector Placeholder - currently fixed to ES */}
+                    <div className="flex items-center bg-flint-subpanel rounded-lg p-1 border border-flint-border">
+                        <span className="px-3 py-1 rounded-md text-[11px] font-bold bg-flint-blue text-white shadow-sm">ES</span>
                     </div>
 
                     <div className="flex items-center gap-1">

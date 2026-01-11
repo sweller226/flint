@@ -9,44 +9,42 @@ router = APIRouter(tags=["candles"])
 @router.get("/candles", response_model=CandlesListResponse)
 async def get_candles(
     contract: str = Query("H", description="Contract quarter code: H (March), M (June), U (Sep), Z (Dec)"),
-    start_time: Optional[str] = Query(None, description="Start timestamp (ISO8601)"),
-    end_time: Optional[str] = Query(None, description="End timestamp (ISO8601)"),
     width_seconds: Optional[int] = Query(None, ge=1, description="Candle width in seconds. If provided, resamples data."),
-    limit: int = Query(100, ge=1, le=100000),
+    limit: int = Query(100, ge=1, le=10000),
 ):
     """Get historical candles for a specific ES futures contract."""
     try:
         market_state = get_market_state(contract)
         
-        start_ts = parse_timestamp(start_time)
-        end_ts = parse_timestamp(end_time)
+        # Default to loading the most recent 'limit' candles
+        # Unless width_seconds is set, then we need to estimate time window to fetch efficiently
+        
+        start_ts = None
+        end_ts = market_state.df['timestamp'].max()
 
-        # Optimization: If resampling is requested but no start time, 
-        # calculate a lookback to avoid resampling the entire history.
-        if width_seconds and not start_ts:
-            latest_ts = end_ts if end_ts else market_state.df['timestamp'].max()
-            # Estimate needed history: limit * width * safety_factor (for weekends/gaps)
-            fetch_seconds = limit * width_seconds * 5 
+        if width_seconds:
+             # Estimate needed history: limit * width * safety_factor
+            fetch_seconds = limit * width_seconds * 5
             
-            # Cap lookback to avoid overflow (Pandas limit is ~584 years). Use 50 years as safe max.
+            # Cap lookback to avoid overflow
             if fetch_seconds > (50 * 365 * 24 * 3600):
                 start_ts = market_state.df['timestamp'].min()
             else:
-                start_ts = latest_ts - pd.Timedelta(seconds=fetch_seconds)
+                start_ts = end_ts - pd.Timedelta(seconds=fetch_seconds)
         
-        # Get data window
-        if start_ts and end_ts:
-            df = market_state.load_window_by_time(start_ts, end_ts)
-        elif start_ts:
-            df = market_state.load_window_by_time(start_ts, market_state.df['timestamp'].max())
-        elif end_ts:
-            df = market_state.load_window_by_time(market_state.df['timestamp'].min(), end_ts)
+        # Load window
+        if start_ts:
+             df = market_state.load_window_by_time(start_ts, end_ts)
         else:
-            df = market_state.df
-        
+             # Just get everything or use simple logic. 
+             # To keep behavior consistent (tail limit), we can just load the whole DF or huge chunk?
+             # But 'load_window_by_time' is the standard way.
+             # If no start_ts estimated, and no explicit start/end params...
+             # We should probably just load the whole DF and tail it?
+             df = market_state.df
+
         # Resample if requested
         if width_seconds:
-            # Ensure index is datetime for resampling
             if not isinstance(df.index, pd.DatetimeIndex):
                 df = df.set_index('timestamp')
             
@@ -58,14 +56,12 @@ async def get_candles(
                 'volume': 'sum'
             }).dropna()
             
-            # Reset index to make timestamp a column again
             df = df.reset_index()
 
-        # Apply limit to the final candle count
+        # Apply limit
         if len(df) > limit:
             df = df.tail(limit)
         
-        # Convert to response
         candles = [
             CandleResponse(
                 timestamp=row['timestamp'].isoformat(),
